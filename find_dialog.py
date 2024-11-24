@@ -34,12 +34,21 @@ class Find_Dialog:
         self.file_import = FileImport(self)
         self.file_import.temp_safe(self.ui)
 
-        value = int(self.find_entry.get())
+        try:
+            value = int(self.find_entry.get())
+        except ValueError:
+            return
 
         self.ui.text_widget.tag_remove("highlight", "1.0", "end")
         self.ui.text_widget.tag_configure("highlight", background="gold2")
 
         self.ui.found_values.clear()
+
+        self.ui.current_values = self.ui.text_widget.get(1.0, END).split()
+        new_values = self.ui.current_values[self.ui.shift_count:]
+        int_values = [int(x) for x in new_values]
+        self.ui.current_values = int_values
+        self.ui.new_values = self.ui.current_values
 
         for i in range(len(self.ui.new_values)):
             if counter > self.ui.columns:

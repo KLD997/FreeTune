@@ -127,6 +127,8 @@ class Utility:
             value = int(entry_content)
         except ValueError:
             return
+        if value < 0 or value > 60:
+            return
         self.ui.columns = value
 
         self.ui.entry.delete(0, END)
@@ -177,9 +179,12 @@ class Utility:
         new_values = int_values[self.ui.shift_count:]
         if ((self.ui.end_time - self.ui.start_time) > 0.2):
             try:
-                self.ui.shift_count = int(self.ui.entry_position.get())
+                value = int(self.ui.entry_position.get())
             except ValueError:
                 return
+            if value < 0 or value > 60:
+                return
+            self.ui.shift_count = value
             self.ui.entry_position.delete(0, END)
             self.ui.entry_position.insert(0, f"{self.ui.shift_count:02}")
             if self.ui.shift_count < self.ui.columns:

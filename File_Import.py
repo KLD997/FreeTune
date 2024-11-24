@@ -1,6 +1,7 @@
 from tkinter import *
 import subprocess
 import struct
+from tkinter import messagebox
 
 class FileImport:
     def __init__(self, ui):
@@ -8,6 +9,9 @@ class FileImport:
 
     def temp_safe(self, ui):
         self.ui = ui
+        if not self.ui.import_allow:
+            messagebox.showerror("Error", "You cannot import a file if there is none open.")
+            return
         self.ui.current_values = self.ui.text_widget.get(1.0, END).split()
         new_values = self.ui.current_values[self.ui.shift_count:]
         self.ui.current_values = new_values
@@ -31,6 +35,10 @@ class FileImport:
     def import_file(self, ui):
         self.ui = ui
         result = subprocess.run(['zenity', '--file-selection'], capture_output=True, text=True)
+
+        if not self.ui.import_allow:
+            messagebox.showerror("Error", "You cannot import a file if there is none open.")
+            return
 
         if result.returncode == 0:
             file_path = result.stdout.strip()

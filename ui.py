@@ -46,6 +46,7 @@ class LinOLS:
         self.total_rows = 0
         self.low_high = True
         self.open = False
+        self.import_allow = False
         self.current_values = []
         self.found_values = []
         self.found_values_counter = 0
