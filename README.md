@@ -33,7 +33,7 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
 
 - **tkinter**: A GUI libary for Python used for making gui applications.
 
-  To install `tkinter`, use your distro's `package manager`:`\n`
+  To install `tkinter`, use your distro's `package manager`:
   Arch based distros:
   ```bash
   sudo pacman -S tk
