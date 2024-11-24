@@ -70,3 +70,13 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   python3 main.py
 ```
+## How to make an executable
+  To make an Executable you have to use `pyinstaller` a Python libary to make executables.
+  You can install `pyinstaller` using `pip`:
+  ```bash
+  pip install pyinstaller
+  ```
+  Once you have pyinstaller installed you can run this command in the `"LinOLS directory"` directory:
+  ```bash
+  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' main.py
+  ```
