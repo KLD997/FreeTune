@@ -80,3 +80,9 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' main.py
   ```
+## Desktop Shortcut
+  If you want you can use a provided template desktop shortcut named: `LinOLS.desktop`.
+  
+  You can also find an icon named: `icon.png`.
+
+  Only thing you need to edit is `Exec` and `Icon`.
