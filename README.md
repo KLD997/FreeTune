@@ -30,3 +30,9 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   To install `matplotlib`, use `pip`:
   ```bash
   pip install matplotlib
+
+- **tkinter**: A GUI libary for Python used for making gui applications.
+
+  To install 'tkinter', use 'sudo pacman -S' on Arch:
+  ```bash
+  sudo pacman -S tk
