@@ -150,4 +150,5 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   
   ### Shortcuts
   Edit mode - E
+  
   Value Dialog - Shift + 5 (Can be accessible via Options menu)
