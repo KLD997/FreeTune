@@ -31,6 +31,12 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   pip install matplotlib
 
+- **customtkinter**: A GUI library for Python used for making GUI applications.
+  
+  To install `customtkinter`, use `pip`:
+  ```bash
+  pip install customtkinter
+
 - **tkinter**: A GUI library for Python used for making GUI applications.
 
   To install `tkinter`, use your distro's `package manager`:
