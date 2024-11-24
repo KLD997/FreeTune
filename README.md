@@ -89,10 +89,59 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
 
 ## Instructions
   ### Text Tab
-  You can select multiple number with holding the left click and then draging with your mouse. You can only drag from up to down.
+  You can select multiple numbers with holding the `left click` and then draging with your mouse. You can only drag from up to down.
 
-  16-bit Lo-Hi and 16-Bit Hi-Lo are for chaning the byte order and changing the mode will ERASE any changes done.
+  `16-bit Lo-Hi and 16-Bit Hi-Lo` are for chaning the byte order and changing the mode will ERASE any changes done.
 
+  `Selected: #` button is for showing you how many numbers do you have selected currently
+
+  `Columns box` is used for changing the number of columns.
+
+  `Shift box` is used for changing the shift value which basicly moves every value for x times to the right.
+
+  `Text to 2D` is used to show where the selected value or values are in 2d mode.
+
+  `Copy` is used for copying values into Excel or LibreCalc
+
+  `Paste` is used for pasting values from Excel or LibreCalc into your file.
+
+  `Undo` for undoing any changes.
+
+  `Redo` for redoing any changes.
+
+  ### 2D Tab
+  You can select a number on 2d canva and you it will automaticly show you that number in text mode.
+  
+  `<` move one frame to the left.
+  
+  `>` move frame to the right.
+  
+  `<<` move a little bit to the left. 
+
+  `>>` move a little bit to the left. 
+  
+  `Update` this will update 2d mode with the latest data from text mode.
+
+  `Value: #` this will show you what value you have selected in 2d mode.
+
+  `%` update location of the 2d mode to the one that is enetered in entry box.
+
+  `-` and `+` increase or decrease the value by one.
+
+  ### File Menu
+  `Open` - Open a new file.
+  
+  `Save` - Save everything into a new file.
+
+  ### Options Menu
+  `Find` can be used to find certain number in your file.
+
+  `Import` is used to import already made file with the current one.
+
+  `Difference` is used to show you diffrences done in your file.
+
+  `Value Changes` is used to change multiple numbers at once.
+  
   ### Shortcuts
   Edit mode - E
   Value Dialog - Shift + 5 (Can be accessible via Options menu)
