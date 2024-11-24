@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=LinOLS
+Exec=/path/to/your/directory/LinOLS
+Icon=/path/to/your/directory/icon.png
+Terminal=false
+Type=Application
+Categories=ChipTuning;
+StartupWMClass=Linols
+
