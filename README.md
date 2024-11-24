@@ -110,7 +110,7 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   `Redo` for redoing any changes.
 
   ### 2D Tab
-  You can select a number on 2d canva and you it will automaticly show you that number in text mode.
+  You can select a number on 2d canva and you will automaticly show you that number in text mode.
   
   `<` move one frame to the left.
   
