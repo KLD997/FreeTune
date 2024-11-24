@@ -49,7 +49,7 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```
 #### Other Dependencies
 
-- **zenity**: A package for Gnu/Linux-distors used for making things like file dialogs.
+- **zenity**: A package for Gnu/Linux distors used for making things like file dialogs.
 
   To install `zenity`, use your distro's `package manager`:
   
@@ -65,3 +65,8 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   sudo dnf install zenity
   ```
+## How to run LinOLS
+  When you installed all dependencies and they are working as intended you can run LinOLS using the following command:
+  ```bash
+  python3 main.py
+```
