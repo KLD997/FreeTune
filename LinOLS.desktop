@@ -1,9 +1,8 @@
 [Desktop Entry]
 Name=LinOLS
-Exec=/path/to/your/directory/LinOLS
-Icon=/path/to/your/directory/icon.png
+Exec=/usr/local/lib/linols/main.py
+Icon=/usr/share/icons/linols.png
 Terminal=false
 Type=Application
 Categories=ChipTuning;
 StartupWMClass=Linols
-
