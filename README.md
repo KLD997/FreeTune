@@ -76,7 +76,7 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   pip install pyinstaller
   ```
-  Once you have pyinstaller installed you can run this command in the `"LinOLS directory"` directory:
+  Once you have pyinstaller installed you can run this command in the `"LinOLS directory"`:
   ```bash
   pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' main.py
   ```
