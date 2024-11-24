@@ -47,4 +47,19 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   sudo dnf install python3-tkinter
   ```
+- **zenity**: A package for Gnu/Linux-distors used for making things like file dialogs.
+
+  To install `zenity`, use your distro's `package manager`:
   
+  Arch based distros:
+  ```bash
+  sudo pacman -S zenity
+  ```
+  Ubuntu/Debian based distros:
+  ```bash
+  sudo apt install zenity
+  ```
+  Fedora based distros:
+  ```bash
+  sudo dnf install zenity
+  ```
