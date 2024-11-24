@@ -86,3 +86,14 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   You can also find an icon named: `icon.png`.
 
   Only thing you need to edit is `Exec` and `Icon`.
+
+## Instructions
+  ### Text Tab
+  You can select multiple number with holding the left click and then draging with your mouse. You can only drag from up to down.
+
+  16-bit Lo-Hi and 16-Bit Hi-Lo are for chaning the byte order and changing the mode will ERASE any changes done.
+
+  ### Shortcuts
+  Edit mode - E
+  Value Dialog - Shift + 5 (Can be accessible via Options menu)
+  
