@@ -47,7 +47,7 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   sudo dnf install python3-tkinter
   ```
-###Other Dependencies
+#### Other Dependencies
 
 - **zenity**: A package for Gnu/Linux-distors used for making things like file dialogs.
 
