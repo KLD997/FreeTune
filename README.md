@@ -31,7 +31,7 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```bash
   pip install matplotlib
 
-- **tkinter**: A GUI libary for Python used for making gui applications.
+- **tkinter**: A GUI library for Python used for making GUI applications.
 
   To install `tkinter`, use your distro's `package manager`:
   
@@ -49,7 +49,7 @@ LinOLS is a free, open-source chiptuning software designed for experienced users
   ```
 #### Other Dependencies
 
-- **zenity**: A package for Gnu/Linux distors used for making things like file dialogs.
+- **zenity**: A package for Gnu/Linux distros used for making things like file dialogs.
 
   To install `zenity`, use your distro's `package manager`:
   
