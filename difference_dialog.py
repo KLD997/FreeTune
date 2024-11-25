@@ -1,5 +1,4 @@
 from tkinter import *
-from tkinter import messagebox
 
 class DifferenceDialog:
     def __init__(self, ui):

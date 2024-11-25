@@ -3,7 +3,6 @@ from tkinter import *
 import subprocess
 from tkinter import messagebox, simpledialog
 import os
-from ui import LinOLS
 
 class TextView:
     def __init__(self, ui):
@@ -14,7 +13,6 @@ class TextView:
         self.ui.open = True
         self.ui.import_allow = True
         self.display_text(self.ui)
-
 
     def display_text(self, ui):
         self.ui = ui
