@@ -1,4 +1,3 @@
-from socket import send_fds
 from tkinter import *
 import time
 

@@ -14,32 +14,6 @@ class TextView:
         self.ui.open = True
         self.ui.import_allow = True
         self.display_text(self.ui)
-        self.ui.columns = 20
-        self.ui.num_rows = 55
-        self.ui.current_frame = 0
-        self.ui.x = 0
-        self.ui.percentage_num = 0
-        self.ui.total_rows = 0
-        self.ui.current_values = []
-        self.ui.found_values = []
-        self.ui.found_values_counter = 0
-        self.ui.new_path = ""
-        self.ui.imported_values = []
-        self.ui.differences = []
-        self.ui.differences_color = []
-        self.ui.ori_values = []
-        self.ui.index_differences = []
-        self.ui.start_time = 0
-        self.ui.running = True
-        self.ui.new_values = []
-        self.ui.selected_count = 0
-        self.ui.values = []
-        self.ui.shift_count = 0
-        self.ui.end_time = 0
-        self.ui.edit_mode_active = False
-        self.ui.display_sel = False
-        self.ui.sel_start = 0
-        self.ui.sel_end = 0
 
 
     def display_text(self, ui):
