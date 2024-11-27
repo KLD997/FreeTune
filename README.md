@@ -1,14 +1,13 @@
 # LinOLS
-LinOLS is a free, open-source chiptuning software, similar to WinOLS, designed for experienced users.
+LinOLS is a free, open-source chiptuning software, similar to WinOLS.
 
 # LinOLS - Chiptuning Software
 
-LinOLS is a free, open-source chiptuning software designed for experienced users. It allows for advanced ECU mapping and remapping for tuning and optimization, similar to WinOLS. LinOLS is built with Python and provides a graphical user interface for easier interaction and visualization of data.
+LinOLS is a free, open-source chiptuning software. It allows for advanced ECU mapping and remapping for tuning and optimization, similar to WinOLS. LinOLS is built with Python and provides a graphical user interface for easier interaction and visualization of data.
 
 ## Features
 
-- Advanced ECU mapping and remapping.
-- User-friendly interface for experienced tuners.
+- Advanced ECU mapping and remapping
 - Plotting and data visualization with `matplotlib`.
 - Customizable to suit various ECU tuning needs.
 
