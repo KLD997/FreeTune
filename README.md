@@ -11,6 +11,13 @@ LinOLS is a free, open-source chiptuning software. It allows for advanced ECU ma
 - Plotting and data visualization with `matplotlib`.
 - Customizable to suit various ECU tuning needs.
 
+## How to run LinOLS easily
+You can download an `executable` which is located under `executable` map in this repository.
+
+And then you just run it with `./LinOLS`.
+
+Important: If you install the executable only thing you need to download is `zenity`, if you don't have it already.
+
 ## Prerequisites
 
 ### System Requirements
