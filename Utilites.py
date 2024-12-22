@@ -88,21 +88,30 @@ class Utility:
         self.ui.differences_color = {}
         self.ui.ori_values = {}
         self.ui.index_differences = {}
+
         if importing:
             first_visible_row = 0
             last_visible_row = int(len(self.ui.unpacked) / self.ui.columns)
         else:
             first_visible_row = int(self.ui.text_widget.yview()[0] * self.ui.total_rows)
             last_visible_row = int(self.ui.text_widget.yview()[1] * self.ui.total_rows)
+
         index = (self.ui.columns * first_visible_row) - 1
         counter = -1
-        for row in range(first_visible_row, last_visible_row, 1):
-            for col in range(0, self.ui.columns, 1):
+
+        for row in range(first_visible_row, last_visible_row):
+            for col in range(0, self.ui.columns):
                 index += 1
-                start_index = f"{row + 1}.{(col + self.ui.shift_count) * 6}"
-                end_index = f"{row + 1}.{(col + self.ui.shift_count) * 6 + 5}"
+                shifted_col = (col + self.ui.shift_count) % self.ui.columns
+                row_shift = (col + self.ui.shift_count) // self.ui.columns
+                current_row = row + row_shift
+
+                start_index = f"{current_row + 1}.{shifted_col * 6}"
+                end_index = f"{current_row + 1}.{(shifted_col + 1) * 6 - 1}"
+
                 self.ui.text_widget.tag_remove("changed_red", start_index, end_index)
                 self.ui.text_widget.tag_remove("changed_blue", start_index, end_index)
+
                 if self.ui.unpacked[index] < new_values[index]:
                     counter += 1
                     self.ui.text_widget.tag_add("changed_red", start_index, end_index)
