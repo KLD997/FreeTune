@@ -4,7 +4,8 @@ class DifferenceDialog:
     def __init__(self, ui):
         self.ui = ui
 
-    def differences_dialog(self):
+    def differences_dialog(self, ui):
+        self.ui = ui
         dialog_difference = Toplevel(bg="#333")
         dialog_difference.resizable(False, False)
         screen_width = self.ui.window.winfo_screenwidth()
@@ -53,7 +54,7 @@ class DifferenceDialog:
     def highlight_difference(self, event):
         selection = self.list_box.curselection()
         item = selection[0]
-        index_sel = self.ui.index_differences[item]
+        index_sel = self.ui.index_differences[item] + self.ui.shift_count
 
         self.ui.current_frame = index_sel
         from Module_2D import Mode2D

@@ -207,7 +207,7 @@ class Utility:
                     formatted = ' '.join(f"{value:05}" for value in row)
                     self.ui.text_widget.insert(END, formatted + '\n')
             self.ui.start_time = time.time()
-        self.check_difference_values(new_values, False, self.ui)
+        self.check_difference_values(new_values, True, self.ui)
 
         from Module_2D import Mode2D
         self.mode2d = Mode2D(self)

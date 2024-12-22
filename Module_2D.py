@@ -194,7 +194,7 @@ class Mode2D:
 
                 self.ui.highlight_start = index
                 value = self.ui.current_values[index]
-                self.ui.text_value.config(text=f"Value: {value:05}")
+                self.ui.text_value.configure(text=f"Value: {value:05}")
 
                 self.draw_canvas(self.ui)
 
