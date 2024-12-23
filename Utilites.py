@@ -89,6 +89,9 @@ class Utility:
         self.ui.ori_values = {}
         self.ui.index_differences = {}
 
+        if len(self.ui.unpacked) != len(new_values):
+            messagebox.showerror("Caution", "Size of the file is not the same!")
+
         if importing:
             first_visible_row = 0
             last_visible_row = int(len(self.ui.unpacked) / self.ui.columns)
@@ -150,6 +153,11 @@ class Utility:
 
         self.ui.text_widget.delete(1.0, END)
 
+        self.ui.total_rows = len(self.ui.unpacked) // self.ui.columns
+
+        if (len(self.ui.unpacked) % self.ui.columns) != 0:
+            self.ui.total_rows += 1
+
         for i in range(self.ui.total_rows):
             row = self.ui.current_values[i * self.ui.columns:(i + 1) * self.ui.columns]
             formatted = ' '.join(f"{value:05}" for value in row)
@@ -160,7 +168,7 @@ class Utility:
 
         int_values = [int(x) for x in self.ui.current_values]
         new_values = int_values[self.ui.shift_count:]
-        self.check_difference_values(new_values, False, self.ui)
+        self.check_difference_values(new_values, True, self.ui)
 
         from text_view import TextView
         from Module_2D import Mode2D

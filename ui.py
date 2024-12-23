@@ -1,3 +1,4 @@
+from time import sleep
 from tkinter import *
 from tkinter import ttk
 from customtkinter import *
@@ -166,7 +167,7 @@ class LinOLS:
 
         self.text_widget.config(yscrollcommand=self.scroll_bar.set)
 
-        tab2 = Frame(self.notebook, bg="#333")
+        tab2 = CTkFrame(self.notebook, fg_color="#333")
         self.notebook.add(tab2, text=" 2D ")
 
         self.fig, self.ax = plt.subplots(figsize=(8, 6), dpi=100)
@@ -185,11 +186,14 @@ class LinOLS:
 
         self.canvas.mpl_connect("button_press_event", self.mode2d.on_canvas_click)
 
-        navigation_buttons_frame = Frame(tab2, bg="#333")
+        tab2.grid_rowconfigure(0, weight=1)
+        tab2.grid_columnconfigure(0, weight=1)
+
+        navigation_buttons_frame = CTkFrame(tab2, fg_color="#333")
         navigation_buttons_frame.grid(row=1, column=0, columnspan=6, pady=5, sticky=W)
 
         update_frame = CTkFrame(tab2, fg_color="#333")
-        update_frame.grid(row=1, column=0, padx=5, pady=5)
+        update_frame.grid(row=1, column=0, padx=5)
 
         center_frame_2d_spacing = CTkFrame(tab2, fg_color="#333")
         center_frame_2d_spacing.grid(row=1, column=0, padx=5, pady=5)
@@ -237,9 +241,6 @@ class LinOLS:
         tab1.grid_rowconfigure(0, weight=1)
         tab1.grid_columnconfigure(0, weight=1)
 
-        tab2.grid_rowconfigure(0, weight=1)
-        tab2.grid_columnconfigure(0, weight=1)
-
         menu_bar = Menu(self.window, bg="#333", fg="white")
         self.window.config(menu=menu_bar)
         file_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white")
@@ -266,8 +267,7 @@ class LinOLS:
 
         self.window.protocol("WM_DELETE_WINDOW", self.exit_app)
 
-
     def exit_app(self, event=None):
-        if self.new_path:
+        if self.new_path and os.path.exists(self.new_path):
             os.remove(self.new_path)
         self.window.quit()

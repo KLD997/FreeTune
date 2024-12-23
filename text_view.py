@@ -33,6 +33,8 @@ class TextView:
                     self.ui.unpacked = struct.unpack('>' + 'H' * (len(content) // 2), content)
                 self.ui.new_values =self.ui.unpacked
                 self.ui.total_rows = len(self.ui.unpacked) // self.ui.columns
+                if (len(self.ui.unpacked) % self.ui.columns) != 0:
+                    self.ui.total_rows += 1
                 self.ui.differences = []
                 self.ui.ori_values = []
                 self.show_all_data()
