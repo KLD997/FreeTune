@@ -38,7 +38,7 @@ class TextAddons:
 
     def on_outside_click(self, event, widget, func2, func3):
         if self.ui.edit_mode_active:
-            if widget.winfo_exists():
+            if widget.winfo_exists() and widget is not None:
                 try:
                     x1, y1, x2, y2 = widget.bbox("all")
                     if not (x1 <= event.x <= x2 and y1 <= event.y <= y2):

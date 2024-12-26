@@ -6,7 +6,6 @@ class Mode2D:
         self.ui = ui
         self.last_page_change_time = 0
 
-
     def scale_to_fixed_range(self, data, min_val=0, max_val=65535):
         return [min(max(val, min_val), max_val) for val in data]
 

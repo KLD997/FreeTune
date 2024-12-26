@@ -71,6 +71,7 @@ class LinOLS:
         self.highlight_start = None
         self.return_text = False
         self.red_line = None
+        self.difference_index = -1
 
         window.config(bg="#333")
 
@@ -253,13 +254,13 @@ class LinOLS:
         options_menu.add_command(label="Find", command=self.find_dialog.find_dialog)
         options_menu.add_command(label="Import", command=lambda: self.file_import.import_file(self))
         options_menu.add_command(label="Difference", command=lambda: self.diff_dialog.differences_dialog(self))
-        options_menu.add_command(label="Value Changer", command=lambda: self.value_dial.value_dialog(self, None))
+        options_menu.add_command(label="Value Changer", command=lambda event=None: self.value_dial.value_dialog(self, event))
 
         self.text_widget.bind("<Button-1>", self.text_addons.start_selection)
         self.text_widget.bind("<ButtonRelease-1>", self.text_addons.stop_drag)
         self.text_widget.bind("<Double-1>", self.text_addons.disable_double_click_selection)
         self.text_widget.bind("<Key>", self.text_addons.disable_user_input)
-        self.text_widget.bind("<percent>", lambda event: self.value_dial.value_dialog(self, None))
+        self.text_widget.bind("<percent>", lambda event=None: self.value_dial.value_dialog(self, event))
         self.text_widget.bind("<e>", self.text_addons.edit_mode)
         self.text_widget.bind("<E>", self.text_addons.edit_mode)
 

@@ -14,7 +14,7 @@ class ValueDialog:
         screen_height = self.ui.window.winfo_screenheight()
 
         width = 250
-        height = 120
+        height = 125
         x = (screen_width / 2) - (width / 2)
         y = (screen_height / 2) - (height / 2)
 
@@ -44,11 +44,8 @@ class ValueDialog:
         button2.grid(row=1, column=1, padx=10, pady=5)
         button3.grid(row=1, column=2, padx=10, pady=5)
 
-        ok_button = Button(self.value_dialog_window, text="Ok", command= lambda: self.calculate(None, self.ui), font=('Arial', 11), bg="#444", highlightthickness=0, fg="white", width=6)
+        ok_button = Button(self.value_dialog_window, text="Ok", command= lambda: self.calculate(self.ui), font=('Arial', 11), bg="#444", highlightthickness=0, fg="white", width=6)
         ok_button.grid(row=2, column=0, columnspan=3, pady=10)
-
-        self.ui.window.bind("<Return>", lambda: self.calculate(None, self.ui))
-
         self.entry.focus_set()
 
         return "break"
@@ -56,7 +53,7 @@ class ValueDialog:
     def change_value(self, value):
         self.selected_value = value
 
-    def calculate(self, event, ui):
+    def calculate(self, ui):
         self.ui = ui
         if self.selected:
             start = self.ui.text_widget.index(SEL_FIRST)

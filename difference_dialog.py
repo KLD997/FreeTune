@@ -10,7 +10,7 @@ class DifferenceDialog:
         dialog_difference.resizable(False, False)
         screen_width = self.ui.window.winfo_screenwidth()
         screen_height = self.ui.window.winfo_screenheight()
-        width = 320
+        width = 305
         height = 335
         x = (screen_width / 2) - (width / 2)
         y = (screen_height / 2) - (height / 2)
@@ -57,6 +57,8 @@ class DifferenceDialog:
         index_sel = self.ui.index_differences[item] + self.ui.shift_count
 
         self.ui.current_frame = index_sel
+        self.ui.red_line = 0
+
         from Module_2D import Mode2D
         self.mode2d = Mode2D(self)
         self.mode2d.draw_canvas(self.ui)
@@ -65,7 +67,6 @@ class DifferenceDialog:
         self.ui.text_widget.tag_remove("highlight", 1.0, END)
         self.ui.text_widget.tag_configure("highlight", background="gold2")
         row = int(index_sel / self.ui.columns)
-        number = index_sel * row
         col = index_sel - (self.ui.columns * (row + 1)) + self.ui.columns
 
         start = f"{row + 1}.{col * 6}"
