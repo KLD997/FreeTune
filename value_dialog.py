@@ -104,7 +104,7 @@ class ValueDialog:
 
             self.ui.current_values = self.ui.text_widget.get(1.0, END).split()
             int_values = [int(x) for x in self.ui.current_values]
-            from Utilites import Utility
+            from Utilities import Utility
             self.utility = Utility(self)
             self.utility.check_difference_values(int_values, False, self.ui)
         else:

@@ -53,7 +53,7 @@ class FileImport:
                 for row in rows:
                     formatted = ' '.join(f"{value:05}" for value in row)
                     self.ui.text_widget.insert(END, formatted + '\n')
-                from Utilites import Utility
+                from Utilities import Utility
                 self.utility = Utility(self)
                 self.utility.check_difference_values(self.ui.imported_values, True, self.ui)
                 from Module_2D import Mode2D

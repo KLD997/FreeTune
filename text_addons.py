@@ -63,7 +63,7 @@ class TextAddons:
 
             self.entry_widget.destroy()
             self.entry_widget = None
-            from Utilites import Utility
+            from Utilities import Utility
             self.utility = Utility(self)
             self.utility.check_value_changes(self.ui)
             self.ui.edit_mode_active = False

@@ -9,7 +9,7 @@ class LinOLS:
     def __init__(self, window):
         from text_view import TextView
         from Module_2D import Mode2D
-        from Utilites import Utility
+        from Utilities import Utility
         from find_dialog import Find_Dialog
         from File_Import import FileImport
         from difference_dialog import DifferenceDialog
