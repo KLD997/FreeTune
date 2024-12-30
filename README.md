@@ -11,18 +11,23 @@ LinOLS is a free, open-source chiptuning software. It allows for advanced ECU ma
 - Plotting and data visualization with `matplotlib`.
 - Customizable to suit various ECU tuning needs.
 
-## How to run LinOLS easily
-You can download an `executable` which is located under `executable` map in this repository.
+## How to run LinOLS on Linux
+You can download an `executable` for Linux, executable is located under `Linux_executable` map in this repository.
 
 And then you just run it with `./LinOLS`.
 
 Important: If you install the executable only thing you need to download is `zenity`, if you don't have it already.
 
+## How to run LinOLS on Windows
+You can download an `setup file` for Window in map called `Windows_Setup` in this repository. 
+
+## Donations
+You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386MJ`
 ## Prerequisites
 
 ### System Requirements
 
-- **Operating System**: Linux-based (Ubuntu, Arch, or other distributions).
+- **Operating System**: Windows or Linux-based (Ubuntu, Arch, or other distributions).
 - **Python 3**: Ensure Python 3.x is installed.
   - Check if Python is installed: `python3 --version`
   - If not installed, you can install it using your system package manager.
@@ -140,6 +145,42 @@ Important: If you install the executable only thing you need to download is `zen
 
   `-` and `+` increase or decrease the value by one.
 
+  ### 3D Tab
+  To select the values hold left click and drag over the values you want to select (doesn't work on axis).
+
+  To rotate 3D plot hold left click and drag it around.
+
+  Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`
+
+  `Copy Map` copy the values of the map without axis to clipboard.
+
+  `Copy Selected` is used to copy selected values to clipboard.
+  
+  `Copy X Axis` is used to copy whole X axis to clipboard.
+
+  `Copy Y Axis` is used to copy whole Y axis to clipboard.
+
+  `Difference: 0` Shows what is the change on the selected value.
+
+  `Row and column boxes` are used to show current rows and columns in 3d view.
+
+  `Update` is used to update values from text view to 3d view.
+
+  `Value Dialog` is used to change selected value quickly.
+
+  `Paste X Axis` is used to paste whole X axis to 3d grid.
+
+  `Paste Y Axis` is used to paste whole Y axis to 3d grid.
+
+  `Write Map` is used to transfer values from 3d grid to text view, so update them.
+
+  `Paste` is used to paste the map to 3d grid, excluding both axis.
+
+  ### Maps Tab
+  `Maps Tab` is used to show all of the created or imported maps.
+
+  You can `right click` on the map you want to remove. 
+
   ### File Menu
   `Open` - Open a new file.
   
@@ -153,7 +194,12 @@ Important: If you install the executable only thing you need to download is `zen
   `Difference` is used to show you diffrences done in your file.
 
   `Value Changes` is used to change multiple numbers at once.
-  
+
+  ### Mappack Menu
+  `Import Mappack` is used to import mappack / `.mp` files.
+
+  `Export Mappack` is used to export mappack / `.mp` files.  
+
   ### Shortcuts
   Edit mode - E
   
