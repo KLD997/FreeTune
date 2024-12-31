@@ -19,7 +19,7 @@ And then you just run it with `./LinOLS`.
 Important: If you install the executable only thing you need to download is `zenity`, if you don't have it already.
 
 ## How to run LinOLS on Windows
-You can download an `setup file` for Window in map called `Windows_Setup` in this repository. 
+You can download an `setup file` for Window 10/11 64bit in map called `Windows_Setup` in this repository. 
 
 ## Donations
 You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386MJ`
