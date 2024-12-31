@@ -552,35 +552,38 @@ class Mode3D:
     def on_focus_out(self, event, row, col, mode):
         if mode == "map":
             entry = self.ui.entry_widgets[row][col]
-            if len(entry.get()) == 0:
+            if len(entry.get()) == 0 or len(entry.get()) > 5:
+                entry.delete(0, END)
                 entry.insert(END, f"{self.ui.original[row][col]:05}")
             else:
                 int_value = int(entry.get())
                 entry.delete(0, END)
                 entry.insert(END, f"{int_value:05}")
-                self.check_difference(None, row, col)
+            self.check_difference(None, row, col)
             if entry.selection_present():
                 entry.selection_clear()
         if mode == "x":
             entry = self.ui.entry_x_widgets[row][col]
-            if len(entry.get()) == 0:
+            if len(entry.get()) == 0 or len(entry.get()) > 5:
+                entry.delete(0, END)
                 entry.insert(END, f"{self.ui.original_X[row][col]:05}")
             else:
                 int_value = int(entry.get())
                 entry.delete(0, END)
                 entry.insert(END, f"{int_value:05}")
-                self.check_difference_x(None, col)
+            self.check_difference_x(None, col)
             if entry.selection_present():
                 entry.selection_clear()
         if mode == "y":
             entry = self.ui.entry_y_widgets[row]
-            if len(entry.get()) == 0:
+            if len(entry.get()) == 0 or len(entry.get()) > 5:
+                entry.delete(0, END)
                 entry.insert(END, f"{self.ui.original_Y[row]:05}")
             else:
                 int_value = int(entry.get())
                 entry.delete(0, END)
                 entry.insert(END, f"{int_value:05}")
-                self.check_difference_y(None, row)
+            self.check_difference_y(None, row)
             if entry.selection_present():
                 entry.selection_clear()
 
