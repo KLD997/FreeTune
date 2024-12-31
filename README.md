@@ -152,6 +152,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`
 
+  `Sign` is used to sign values in 3d plot view.
+
   `Copy Map` copy the values of the map without axis to clipboard.
 
   `Copy Selected` is used to copy selected values to clipboard.
@@ -160,19 +162,21 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Copy Y Axis` is used to copy whole Y axis to clipboard.
 
-  `Difference: 0` Shows what is the change on the selected value.
+  `Update` is used to update values from text view to 3d view.
+
+  `Diff: 0` Shows what is the change on the selected value.
 
   `Row and column boxes` are used to show current rows and columns in 3d view.
 
-  `Update` is used to update values from text view to 3d view.
+  `Value` is used to change selected value quickly.
 
-  `Value Dialog` is used to change selected value quickly.
+  `Write Map` is used to transfer values from 3d grid to text view, so update them.
 
   `Paste X Axis` is used to paste whole X axis to 3d grid.
 
   `Paste Y Axis` is used to paste whole Y axis to 3d grid.
 
-  `Write Map` is used to transfer values from 3d grid to text view, so update them.
+  `Paste Selected` is used to paste values from clipboard to the location of the starting value / ONE selected value.
 
   `Paste` is used to paste the map to 3d grid, excluding both axis.
 

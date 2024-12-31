@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import messagebox
 import time
 
 class Mode2D:
@@ -145,8 +146,11 @@ class Mode2D:
         if entry:
             try:
                 num = int(self.ui.percentage_entry.get())
+                if num < 0 or num > 100:
+                    raise ValueError
                 self.ui.percentage_num = num
             except ValueError:
+                messagebox.showerror("Error", "Enter a correct value! (0% - 100%)")
                 return
         else:
             if arg == "plus" and self.ui.percentage_num < 99:

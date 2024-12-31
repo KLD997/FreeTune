@@ -18,7 +18,7 @@ class Mode3D:
             return "break"
 
         difference = current_value - original_value
-        self.ui.label_diff_3d.configure(text=f"Difference: {difference}")
+        self.ui.label_diff_3d.configure(text=f"Diff: {difference}")
 
     def copy_selected_cells(self):
         selected_content = ""
@@ -33,7 +33,6 @@ class Mode3D:
         selected_content = selected_content.strip()
         self.ui.window.clipboard_clear()
         self.ui.window.clipboard_append(selected_content)
-        self.ui.update()
 
     def start_interaction(self, event, i, j):
         x, y = event.x_root, event.y_root
@@ -266,55 +265,34 @@ class Mode3D:
         self.ui.rows_3d = new_rows
 
     def update_3d_view(self):
-        try:
-            x_default = all(entry.get() == "00000" for entry in self.ui.entry_x_widgets[0])
-            y_default = all(entry.get() == "00000" for entry in self.ui.entry_y_widgets)
+        x = np.arange(self.ui.columns_3d)
+        y = np.arange(self.ui.rows_3d)
+        x, y = np.meshgrid(x, y)
 
-            if x_default and y_default:
-                x = np.arange(self.ui.columns_3d)
-                y = np.arange(self.ui.rows_3d)
-                x, y = np.meshgrid(x, y)
+        values = np.array([[float(self.ui.entry_widgets[i][j].get()) for j in range(self.ui.columns_3d)]
+                           for i in range(self.ui.rows_3d)])
 
-                values = np.zeros((self.ui.rows_3d, self.ui.columns_3d))
-                for i in range(self.ui.rows_3d):
-                    for j in range(self.ui.columns_3d):
-                        value = float(self.ui.entry_widgets[i][j].get())
-                        values[i][j] = value
+        if self.ui.signed_values:
+            for i in range(values.shape[0]):
+                for j in range(values.shape[1]):
+                    if values[i, j] > 55000:
+                        values[i, j] = 0
 
-                self.ui.ax_3d.clear()
-                surf = self.ui.ax_3d.plot_surface(x, y, values, cmap='viridis', edgecolor='none')
-                self.ui.ax_3d.set_xlabel('X')
-                self.ui.ax_3d.set_ylabel('Y')
-                self.ui.ax_3d.set_zlabel('Value')
+        self.ui.ax_3d.clear()
+        surf = self.ui.ax_3d.plot_surface(x, y, values, cmap='viridis', edgecolor='none')
+        self.ui.ax_3d.set_xlabel('X')
+        self.ui.ax_3d.set_ylabel('Y')
+        self.ui.ax_3d.set_zlabel('Value')
 
-                self.ui.ax_3d.set_xticks([])
-                self.ui.ax_3d.set_yticks([])
+        if all(entry.get() == "00000" for entry in self.ui.entry_x_widgets[0]) and \
+                all(entry.get() == "00000" for entry in self.ui.entry_y_widgets):
+            self.ui.ax_3d.set_xticks([])
+            self.ui.ax_3d.set_yticks([])
+        else:
+            self.ui.ax_3d.set_xticks(np.arange(0, self.ui.columns_3d, 1))
+            self.ui.ax_3d.set_yticks(np.arange(0, self.ui.rows_3d, 1))
 
-                self.ui.canvas_3d.draw()
-            else:
-                x = np.arange(self.ui.columns_3d)
-                y = np.arange(self.ui.rows_3d)
-                x, y = np.meshgrid(x, y)
-
-                values = np.zeros((self.ui.rows_3d, self.ui.columns_3d))
-                for i in range(self.ui.rows_3d):
-                    for j in range(self.ui.columns_3d):
-                        value = float(self.ui.entry_widgets[i][j].get())
-                        values[i][j] = value
-
-                self.ui.ax_3d.clear()
-                self.ui.ax_3d.plot_surface(x, y, values, cmap='viridis')
-                self.ui.ax_3d.set_xlabel('X')
-                self.ui.ax_3d.set_ylabel('Y')
-                self.ui.ax_3d.set_zlabel('Value')
-
-                self.ui.ax_3d.set_xticks(np.arange(0, self.ui.columns_3d, 1))
-                self.ui.ax_3d.set_yticks(np.arange(0, self.ui.rows_3d, 1))
-
-                self.ui.canvas_3d.draw()
-
-        except ValueError:
-            messagebox.showerror("Error", "Please enter valid numbers.")
+        self.ui.canvas_3d.draw()
 
     def paste_data(self, maps, data, row, col, new):
         if maps:
@@ -475,8 +453,6 @@ class Mode3D:
         else:
             entry.configure(fg="black")
 
-        time.sleep(0.01)
-
         self.update_3d_view()
 
     def check_difference_x(self, event, j):
@@ -552,38 +528,35 @@ class Mode3D:
     def on_focus_out(self, event, row, col, mode):
         if mode == "map":
             entry = self.ui.entry_widgets[row][col]
-            if len(entry.get()) == 0 or len(entry.get()) > 5:
-                entry.delete(0, END)
+            if len(entry.get()) == 0:
                 entry.insert(END, f"{self.ui.original[row][col]:05}")
             else:
                 int_value = int(entry.get())
                 entry.delete(0, END)
                 entry.insert(END, f"{int_value:05}")
-            self.check_difference(None, row, col)
+                self.check_difference(None, row, col)
             if entry.selection_present():
                 entry.selection_clear()
         if mode == "x":
             entry = self.ui.entry_x_widgets[row][col]
-            if len(entry.get()) == 0 or len(entry.get()) > 5:
-                entry.delete(0, END)
+            if len(entry.get()) == 0:
                 entry.insert(END, f"{self.ui.original_X[row][col]:05}")
             else:
                 int_value = int(entry.get())
                 entry.delete(0, END)
                 entry.insert(END, f"{int_value:05}")
-            self.check_difference_x(None, col)
+                self.check_difference_x(None, col)
             if entry.selection_present():
                 entry.selection_clear()
         if mode == "y":
             entry = self.ui.entry_y_widgets[row]
-            if len(entry.get()) == 0 or len(entry.get()) > 5:
-                entry.delete(0, END)
+            if len(entry.get()) == 0:
                 entry.insert(END, f"{self.ui.original_Y[row]:05}")
             else:
                 int_value = int(entry.get())
                 entry.delete(0, END)
                 entry.insert(END, f"{int_value:05}")
-            self.check_difference_y(None, row)
+                self.check_difference_y(None, row)
             if entry.selection_present():
                 entry.selection_clear()
 
@@ -636,3 +609,38 @@ class Mode3D:
         self.ui.rows_entry.configure(state="disabled")
 
         self.update_3d_view()
+
+    def paste_selected(self):
+        selected_counter = 0
+        start_row, start_col = None, None
+
+        for row in range(self.ui.rows_3d):
+            for col in range(self.ui.columns_3d):
+                entry = self.ui.entry_widgets[row][col]
+                if entry.cget("bg") == "lightblue":
+                    selected_counter += 1
+                    if start_row is None and start_col is None:
+                        start_row, start_col = row, col
+
+        if selected_counter != 1:
+            messagebox.showerror("Error", "Please select one value where pasting should start from!")
+            return
+
+        data = self.ui.window.clipboard_get()
+        lines = data.strip().split('\n')
+        num_rows = len(lines)
+        num_columns = max(len(line.strip().split('\t')) for line in lines)
+
+        if (start_row + num_rows > self.ui.rows_3d) or (start_col + num_columns > self.ui.columns_3d):
+            messagebox.showerror("Error", "Not enough space to paste the values!")
+            return
+
+        for i, line in enumerate(lines):
+            numbers = line.strip().split('\t')
+            for j, num in enumerate(numbers):
+                if i < self.ui.rows_3d and j < self.ui.columns_3d:
+                    new_value = '{:05d}'.format(int(num))
+                    self.ui.entry_widgets[start_row + i][start_col + j].delete(0, END)
+                    self.ui.entry_widgets[start_row + i][start_col + j].insert(0, new_value)
+                    self.ui.entry_widgets[start_row + i][start_col + j].configure(fg="black")
+                    self.check_difference(None, start_row + i, start_col + j)

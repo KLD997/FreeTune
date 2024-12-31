@@ -1,6 +1,7 @@
 import os
 from tkinter import *
-from tkinter import messagebox, filedialog
+from tkinter import messagebox
+import subprocess
 
 class Maps_Utility:
     def __init__(self, ui):
@@ -136,43 +137,47 @@ class Maps_Utility:
 
     def update_3d_from_text(self):
         item = self.ui.map_list.get(self.last_map_index)
+
         with open(self.file_path, 'r') as file:
-            content = file.read().split("\n")
-            for i in range(len(content)):
-                if content[i] == item:
-                    start_index = int(content[i + 1])
-                    end_index = int(content[i + 2])
-                    size = content[i + 3]
+            content = file.readlines()
+            item_index = -1
 
-                    parts = size.split('x')
-                    self.col = int(parts[0])
-                    self.row = int(parts[1])
-
-                    from Module_3D import Mode3D
-                    mode3d = Mode3D(self.ui)
-
-                    self.map_data = self.ui.unpacked[start_index:end_index]
-                    mode3d.paste_data(True, self.map_data, self.row, self.col, False)
-                    if not (start_index - (self.col + self.row) < 0):
-                        self.x_axis = self.ui.unpacked[start_index - self.col:start_index]
-                        self.y_axis = self.ui.unpacked[start_index - (self.col + self.row):start_index - self.col]
-                        mode3d.paste_x_data(True, self.x_axis, False)
-                        mode3d.paste_y_data(True, self.y_axis, False)
-
-                    self.ui.current_values = self.ui.text_widget.get(1.0, END).split()
-                    new_values = self.ui.current_values[self.ui.shift_count:]
-                    self.ui.current_values = new_values
-                    self.map_data = self.ui.current_values[start_index:end_index]
-                    mode3d.paste_data(True, self.map_data, self.row, self.col, True)
-                    if not (start_index - (self.col + self.row) < 0):
-                        self.x_axis = self.ui.current_values[start_index - self.col:start_index]
-                        self.y_axis = self.ui.current_values[start_index - (self.col + self.row):start_index - self.col]
-                        mode3d.paste_x_data(True, self.x_axis, True)
-                        mode3d.paste_y_data(True, self.y_axis, True)
-
-                    mode3d.check_all()
-
+            for i, line in enumerate(content):
+                if line.strip() == item:
+                    item_index = i
                     break
+
+            if item_index == -1:
+                return
+
+            start_index = int(content[item_index + 1])
+            end_index = int(content[item_index + 2])
+            size = content[item_index + 3].strip()
+
+            self.col, self.row = map(int, size.split('x'))
+            from Module_3D import Mode3D
+            mode3d = Mode3D(self.ui)
+
+            self.map_data = self.ui.unpacked[start_index:end_index]
+            mode3d.paste_data(True, self.map_data, self.row, self.col, False)
+
+            if start_index >= self.col + self.row:
+                self.x_axis = self.ui.unpacked[start_index - self.col:start_index]
+                self.y_axis = self.ui.unpacked[start_index - (self.col + self.row):start_index - self.col]
+                mode3d.paste_x_data(True, self.x_axis, False)
+                mode3d.paste_y_data(True, self.y_axis, False)
+
+            self.ui.current_values = self.ui.text_widget.get(1.0, END).split()[self.ui.shift_count:]
+            self.map_data = self.ui.current_values[start_index:end_index]
+            mode3d.paste_data(True, self.map_data, self.row, self.col, True)
+
+            if start_index >= self.col + self.row:
+                self.x_axis = self.ui.current_values[start_index - self.col:start_index]
+                self.y_axis = self.ui.current_values[start_index - (self.col + self.row):start_index - self.col]
+                mode3d.paste_x_data(True, self.x_axis, True)
+                mode3d.paste_y_data(True, self.y_axis, True)
+
+            mode3d.check_all()
 
     def highlight_text_map(self, start_index, end_index):
         self.ui.text_widget.tag_remove(f"{self.map_name}", 1.0, END)
@@ -317,7 +322,12 @@ class Maps_Utility:
         self.ui.remove_menu.unpost()
 
     def import_map(self):
-        file_path = filedialog.askopenfilename()
+        result = subprocess.run(['zenity', '--file-selection'], capture_output=True, text=True)
+
+        if result.returncode == 0:
+            file_path = result.stdout.strip()
+        else:
+            return
 
         if file_path:
             self.ui.map_list_counter = 0
@@ -363,3 +373,35 @@ class Maps_Utility:
         with open(file_path, 'w') as file:
             for i in range(len(content)):
                 file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
+
+    def linux_asksaveasfilename(self, initial_dir="", defaultextension=".mp", filetypes=[("Mappack Files", "*.mp")],
+                                initialfile=""):
+        try:
+            filter_string = ' '.join([f'--file-filter={ftype[0]} | {ftype[1]}' for ftype in filetypes])
+
+            command = ['zenity', '--file-selection', '--save', '--confirm-overwrite',
+                       '--filename=' + initialfile, '--file-filter=*.mp']
+
+            result = subprocess.run(command, capture_output=True, text=True)
+
+            if result.returncode == 0:
+                file_path = result.stdout.strip()
+                if not file_path.endswith(defaultextension):
+                    file_path += defaultextension
+                return file_path
+            else:
+                return
+
+        except FileNotFoundError:
+            messagebox.showerror("Error", "You don't have zenity installed!")
+
+    def sign_values(self):
+        from Module_3D import Mode3D
+        mode3d = Mode3D(self.ui)
+
+        if self.ui.signed_values:
+            self.ui.signed_values = False
+        else:
+            self.ui.signed_values = True
+
+        mode3d.update_3d_view()
