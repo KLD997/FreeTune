@@ -91,6 +91,7 @@ class LinOLS:
 
         self.notebook = ttk.Notebook(window)
         style = ttk.Style()
+        style.theme_use('default')
         style.configure("TNotebook", background="#333")
         style.configure("TNotebook.Tab", background="#333", foreground="white")
         style.map("TNotebook.Tab", background=[('selected', '#555')])
@@ -109,7 +110,7 @@ class LinOLS:
         self.text_widget.pack(side=LEFT, fill=BOTH, expand=True)
         self.text_widget.configure(insertbackground='white', undo=True)
 
-        self.scroll_bar = Scrollbar(text_frame, command=self.text_widget.yview, bg="#333")
+        self.scroll_bar = CTkScrollbar(text_frame, command=self.text_widget.yview, fg_color="#333")
         self.scroll_bar.pack(side=RIGHT, fill=Y)
 
         self.text_widget.config(yscrollcommand=self.scroll_bar.set)
