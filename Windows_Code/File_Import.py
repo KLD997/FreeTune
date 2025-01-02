@@ -1,6 +1,7 @@
 from tkinter import *
 import struct
 from tkinter import messagebox, filedialog
+import os
 
 class FileImport:
     def __init__(self, ui):
@@ -15,7 +16,9 @@ class FileImport:
         new_values = self.ui.current_values[self.ui.shift_count:]
         self.ui.current_values = new_values
 
-        self.ui.new_path = "temp.bin"
+        documents_path = os.path.expanduser("~/Documents")
+
+        self.ui.new_path = os.path.join(documents_path, "temp.bin")
 
         if self.ui.low_high:
             content_to_write = b''.join(struct.pack('<H', int(value)) for value in self.ui.current_values)

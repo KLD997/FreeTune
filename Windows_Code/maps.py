@@ -1,12 +1,13 @@
 import os
 from tkinter import *
 from tkinter import messagebox, filedialog
-import subprocess
 
 class Maps_Utility:
     def __init__(self, ui):
         self.ui = ui
-        self.file_path = "mappack.mp"
+        documents_path = os.path.expanduser("~/Documents")
+
+        self.file_path = os.path.join(documents_path, "mappack.mp")
         self.map_data = []
         self.x_axis = []
         self.y_axis = []

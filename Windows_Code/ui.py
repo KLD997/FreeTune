@@ -109,7 +109,7 @@ class LinOLS:
         self.text_widget.pack(side=LEFT, fill=BOTH, expand=True)
         self.text_widget.configure(insertbackground='white', undo=True)
 
-        self.scroll_bar = Scrollbar(text_frame, command=self.text_widget.yview, bg="#333")
+        self.scroll_bar = CTkScrollbar(text_frame, command=self.text_widget.yview, fg_color="#333")
         self.scroll_bar.pack(side=RIGHT, fill=Y)
 
         self.text_widget.config(yscrollcommand=self.scroll_bar.set)
@@ -533,7 +533,8 @@ class LinOLS:
     def clean_up(self):
         if self.new_path and os.path.exists(self.new_path):
             os.remove(self.new_path)
-        file_path = "mappack.mp"
+        documents_path = os.path.expanduser("~/Documents")
+        file_path = os.path.join(documents_path, "mappack.mp")
         if os.path.exists(file_path):
             os.remove(file_path)
 
