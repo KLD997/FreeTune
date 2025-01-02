@@ -91,6 +91,7 @@ class LinOLS:
 
         self.notebook = ttk.Notebook(window)
         style = ttk.Style()
+        style.theme_use('default')
         style.configure("TNotebook", background="#333")
         style.configure("TNotebook.Tab", background="#333", foreground="white")
         style.map("TNotebook.Tab", background=[('selected', '#555')])
