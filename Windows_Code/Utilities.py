@@ -295,5 +295,46 @@ class Utility:
         self.ui.text_widget.edit_redo()
         self.check_value_changes(self.ui)
 
-    def clear_and_reapply_tags(self):
-        pass
+    def on_key_press_2d(self, event):
+        if event.key == 'n' or event.key == 'N':
+            self.value_changes_skipping(True)
+        if event.key == 'v' or event.key == 'V':
+            self.value_changes_skipping(False)
+
+    def value_changes_skipping(self, forward):
+        current_index = self.ui.current_frame + self.ui.red_line
+
+        next_value = 0
+
+        if forward:
+            for i in range(len(self.ui.index_differences)):
+                if self.ui.index_differences[i] > current_index:
+                    next_value = self.ui.index_differences[i]
+                    break
+        else:
+            for i in range(len(self.ui.index_differences) - 1, -1, -1):
+                if self.ui.index_differences[i] < current_index:
+                    next_value = self.ui.index_differences[i]
+                    break
+
+        if next_value == 0:
+            return
+
+        frame = 0
+        while frame < next_value:
+            temp = frame + self.ui.num_rows * self.ui.columns
+            if temp < next_value:
+                frame += self.ui.num_rows * self.ui.columns
+            else:
+                break
+
+        self.ui.current_frame = frame
+
+        self.ui.red_line = next_value - frame
+
+        from Module_2D import Mode2D
+        mode2d = Mode2D(self.ui)
+
+        mode2d.highlight_text(self.ui.red_line)
+
+        mode2d.draw_canvas(self.ui)

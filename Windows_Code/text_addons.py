@@ -114,6 +114,18 @@ class TextAddons:
         self.ui.text_widget.tag_remove(SEL, "1.0", END)
         self.ui.text_widget.tag_add(SEL, f"{sel_start}", f"{row}.{col}")
 
+        if len(selected_text.strip()) == 5:
+            text = str(sel_start)
+            parts = text.split('.')
+            row = int(parts[0]) - 1
+            col = int(parts[1]) // 6
+
+            index = row * self.ui.columns + col
+
+            self.ui.ori_value_label.configure(text=f"Ori: {self.ui.unpacked[index]:05}")
+        else:
+            self.ui.ori_value_label.configure(text="Ori: 00000")
+
     def on_enter(self):
         self.ui.text_widget.tag_remove(SEL, "1.0", END)
         self.ui.text_widget.tag_add(SEL, f"{self.start_row}.{self.start}", f"{self.end_row}.{self.end}")

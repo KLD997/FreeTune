@@ -1,6 +1,6 @@
 import os
 from tkinter import *
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import subprocess
 
 class Maps_Utility:
@@ -322,13 +322,7 @@ class Maps_Utility:
         self.ui.remove_menu.unpost()
 
     def import_map(self):
-        result = subprocess.run(['zenity', '--file-selection'], capture_output=True, text=True)
-
-        if result.returncode == 0:
-            file_path = result.stdout.strip()
-        else:
-            return
-
+        file_path = filedialog.askopenfilename()
         if file_path:
             self.ui.map_list_counter = 0
             self.last_map_index = 0
@@ -364,8 +358,7 @@ class Maps_Utility:
             messagebox.showerror("Error", "You have to create or import a mappack before you can export it!")
             return
 
-        file_path = self.linux_asksaveasfilename(initial_dir="", defaultextension=".mp", filetypes=[("Mappack Files", "*.mp")],
-                                                 initialfile="")
+        file_path = filedialog.askopenfilename()
 
         with open(self.file_path, 'r') as ori:
             content = ori.read().split('\n')
@@ -373,27 +366,6 @@ class Maps_Utility:
         with open(file_path, 'w') as file:
             for i in range(len(content)):
                 file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
-
-    def linux_asksaveasfilename(self, initial_dir="", defaultextension=".mp", filetypes=[("Mappack Files", "*.mp")],
-                                initialfile=""):
-        try:
-            filter_string = ' '.join([f'--file-filter={ftype[0]} | {ftype[1]}' for ftype in filetypes])
-
-            command = ['zenity', '--file-selection', '--save', '--confirm-overwrite',
-                       '--filename=' + initialfile, '--file-filter=*.mp']
-
-            result = subprocess.run(command, capture_output=True, text=True)
-
-            if result.returncode == 0:
-                file_path = result.stdout.strip()
-                if not file_path.endswith(defaultextension):
-                    file_path += defaultextension
-                return file_path
-            else:
-                return
-
-        except FileNotFoundError:
-            messagebox.showerror("Error", "You don't have zenity installed!")
 
     def sign_values(self):
         from Module_3D import Mode3D

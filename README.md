@@ -112,6 +112,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Selected: #` button is for showing you how many numbers do you have selected currently
 
+  `Ori: #` buttion is for showing the original value of the selected value.
+
   `Columns box` is used for changing the number of columns.
 
   `Shift box` is used for changing the shift value which basicly moves every value for x times to the right.
@@ -205,6 +207,10 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   `Export Mappack` is used to export mappack / `.mp` files.  
 
   ### Shortcuts
-  Edit mode - E
+  Edit mode - `E`
+
+  Skip to the next changed value in 2d mode - `n` or `N`
   
+  Ship to the previous changed value in 2d mode - `v` or `V`ss
+
   Value Dialog - Shift + 5 (Can be accessible via Options menu)

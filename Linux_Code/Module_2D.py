@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+import numpy as np
 import time
 
 class Mode2D:
@@ -15,36 +16,47 @@ class Mode2D:
         self.ui.ax.clear()
 
         start_index = self.ui.current_frame
-        #end_index = min(start_index + self.ui.num_rows * self.ui.columns, len(self.ui.unpacked))
-        #data_unpacked = self.ui.unpacked[start_index:end_index]
-
         end_index_mod = min(start_index + self.ui.num_rows * self.ui.columns, len(self.ui.new_values))
         data_unpacked_mod = self.ui.new_values[start_index:end_index_mod]
 
-        #scaled_data = self.scale_to_fixed_range(data_unpacked)
-        scaled_data_mod = self.scale_to_fixed_range(data_unpacked_mod)
+        data_unpacked = self.ui.unpacked[start_index:end_index_mod]
 
-        self.ui.ax.plot(scaled_data_mod, color="white", label="Data", linewidth=0.5)
+        scaled_data_mod = self.scale_to_fixed_range(data_unpacked_mod)
+        scaled_data = self.scale_to_fixed_range(data_unpacked)
+
+        scaled_data_mod = np.array(scaled_data_mod)
+        scaled_data = np.array(scaled_data)
+
+        mask = scaled_data_mod != scaled_data
+
+        self.ui.ax.plot(scaled_data_mod, color="white", linewidth=0.5)
+
+        if np.any(mask):
+            differing_indices = np.where(mask)[0]
+            segments = np.split(differing_indices, np.where(np.diff(differing_indices) != 1)[0] + 1)
+
+            for segment in segments:
+                self.ui.ax.plot(segment, scaled_data_mod[segment], color="red", linewidth=0.5)
 
         if self.ui.red_line is not None:
             self.ui.ax.axvline(self.ui.red_line, color="#bd090e", linestyle='-', label="Clicked Position")
+
         if self.ui.display_sel:
             self.ui.ax.axvspan(self.ui.sel_start, self.ui.sel_end, color="#555", alpha=0.3, label="Selected Area")
 
         start_maps = self.ui.start_index_maps
         end_maps = self.ui.end_index_maps
 
+        frame = self.ui.num_rows * self.ui.columns
         for i in range(len(self.ui.start_index_maps)):
-            frame = self.ui.num_rows * self.ui.columns
-
             ok = False
 
             start = start_maps[i]
             end = end_maps[i]
 
-            if (end-start_index) >= 0:
+            if (end - start_index) >= 0:
                 ok = True
-                temp = end-start_index
+                temp = end - start_index
                 if temp <= start_index + frame:
                     end = temp
 
@@ -58,9 +70,7 @@ class Mode2D:
             if ok:
                 self.ui.ax.axvspan(start, end, color="#907900", alpha=0.3, label=f"{self.ui.maps_names[i]}")
 
-
         self.ui.ax.set_xlim(0, len(scaled_data_mod))
-
         self.ui.ax.set_ylim(0, 65535)
 
         self.ui.ax.axis('off')

@@ -91,7 +91,6 @@ class LinOLS:
 
         self.notebook = ttk.Notebook(window)
         style = ttk.Style()
-        style.theme_use('default')
         style.configure("TNotebook", background="#333")
         style.configure("TNotebook.Tab", background="#333", foreground="white")
         style.map("TNotebook.Tab", background=[('selected', '#555')])
@@ -115,9 +114,6 @@ class LinOLS:
 
         self.text_widget.config(yscrollcommand=self.scroll_bar.set)
 
-        center_frame_left = CTkFrame(tab1, fg_color="#333")
-        center_frame_left.grid(row=1, column=0, pady=5)
-
         center_frame = CTkFrame(tab1, fg_color="#333")
         center_frame.grid(row=1, column=0, pady=5)
 
@@ -136,17 +132,17 @@ class LinOLS:
                                 text_color="white", command=self.maps.add_map)
         add_map_btn.grid(row=0, column=2, padx=5)
 
-        self.selected_count_label = CTkButton(center_frame_left, text="Selected: 0", width=100, hover_color="#555",
-                                              fg_color="#444", text_color="white")
-        self.selected_count_label.grid(row=0, column=0, padx=198)
-
-        button_2d = CTkButton(center_frame_left, text="Text to 2D", hover_color="#555", width=100,
+        button_2d = CTkButton(buttons_frame, text="Text to 2D", hover_color="#555", width=6,
                               command=lambda: self.mode2d.text_to_2d(self), fg_color="#444", text_color="white")
-        button_2d.grid(row=0, column=1, padx=200)
+        button_2d.grid(row=0, column=3, padx=5)
+
+        self.selected_count_label = CTkButton(center_frame, text="Selected: 0", width=100, hover_color="#555",
+                                              fg_color="#444", text_color="white")
+        self.selected_count_label.grid(row=0, column=0, padx=10)
 
         '''COLUMNS FRAME'''
         columns_frame = CTkFrame(center_frame, border_color="#555", border_width=1, fg_color="#333")
-        columns_frame.grid(row=0, column=0, padx=5)
+        columns_frame.grid(row=0, column=1, padx=5)
 
         label_col = CTkLabel(columns_frame, text="Col:", width=3, height=2, fg_color="#333", text_color="white")
         label_col.grid(row=0, column=0, padx=5, pady=3)
@@ -162,7 +158,7 @@ class LinOLS:
 
         '''SHIFT FRAME'''
         shift_frame = CTkFrame(center_frame, border_color="#555", border_width=1, fg_color="#333")
-        shift_frame.grid(row=0, column=1, padx=5)
+        shift_frame.grid(row=0, column=2, padx=5)
 
         label_shift = CTkLabel(shift_frame, text="Shift:", width=3, height=2, fg_color="#333", text_color="white")
         label_shift.grid(row=0, column=0, padx=5, pady=3)
@@ -174,6 +170,10 @@ class LinOLS:
         apply_position = CTkButton(shift_frame, text="Apply", width=6, hover_color="#555", fg_color="#444",
                                    text_color="white", command=lambda: self.utility.move_items(self))
         apply_position.grid(row=0, column=2, padx=5, pady=3)
+
+        self.ori_value_label = CTkButton(center_frame, text="Ori: 00000", width=100, hover_color="#555",
+                                         fg_color="#444", text_color="white")
+        self.ori_value_label.grid(row=0, column=3, padx=10)
 
         '''EDIT BUTTONS'''
         edit_buttons = CTkFrame(tab1, fg_color="#333")
@@ -213,6 +213,8 @@ class LinOLS:
         self.canvas.get_tk_widget().config(highlightthickness=0)
 
         self.canvas.mpl_connect("button_press_event", self.mode2d.on_canvas_click)
+
+        self.canvas.mpl_connect("key_press_event", self.utility.on_key_press_2d)
 
         tab2.grid_rowconfigure(0, weight=1)
         tab2.grid_columnconfigure(0, weight=1)
