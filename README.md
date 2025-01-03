@@ -99,7 +99,7 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   ```
 ## Desktop Shortcut
   If you want you can use a provided template desktop shortcut named: `LinOLS.desktop`.
-  
+  New update
   You can also find an icon named: `icon.png`.
 
   Only thing you need to edit is `Exec` and `Icon`.
@@ -219,6 +219,6 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   Value Dialog - Shift + 5 (Can be accessible via Options menu)
 
-  Ctrl+V on Text view for opening files fast
+  `Ctrl+V` on Text view for opening files fast
 
-  Ctrl+I on Text view for importing files fast
+  `Ctrl+I` on Text view for importing files fast
