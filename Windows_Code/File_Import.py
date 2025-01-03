@@ -34,14 +34,16 @@ class FileImport:
             else:
                 self.ui.new_values = struct.unpack('>' + 'H' * (len(content) // 2), content)
 
-    def import_file(self, ui):
+    def import_file(self, ui, shortcut, path):
         self.ui = ui
-        file_path = filedialog.askopenfilename()
+        if not shortcut:
+            file_path = filedialog.askopenfilename()
 
-        if not self.ui.import_allow:
-            messagebox.showerror("Error", "You cannot import a file if there is none open.")
-            return
-
+            if not self.ui.import_allow:
+                messagebox.showerror("Error", "You cannot import a file if there is none open.")
+                return
+        else:
+            file_path = path
         with open(file_path, 'rb') as file:
             content = file.read()
             if self.ui.low_high:

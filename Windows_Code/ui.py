@@ -17,6 +17,7 @@ class LinOLS:
         from Module_3D import Mode3D
         from maps import Maps_Utility
         from value_dialog_3d import Value_Dialog_3D
+        from hex_address_dialog import HexAddressDialog
         self.window = window
         window.title("LinOLS")
 
@@ -40,6 +41,7 @@ class LinOLS:
         self.mode3d = Mode3D(self)
         self.maps = Maps_Utility(self)
         self.value_dialog_3d = Value_Dialog_3D(self)
+        self.hex_address_dial = HexAddressDialog(self)
 
         self.file_path = ""
         self.columns = 20
@@ -114,6 +116,12 @@ class LinOLS:
         self.scroll_bar.pack(side=RIGHT, fill=Y)
 
         self.text_widget.config(yscrollcommand=self.scroll_bar.set)
+
+        self.hex_address_menu = Menu(tab1, tearoff=0, bg="#333", fg="white")
+        self.hex_address_menu.add_command(label="Copy Hex Address", command=self.text_addons.copy_hex_address)
+
+        self.text_widget.bind("<Button-3>", self.text_addons.show_hex_address_menu)
+        self.window.bind("<Button-1>", self.text_addons.hide_hex_address_menu)
 
         center_frame = CTkFrame(tab1, fg_color="#333")
         center_frame.grid(row=1, column=0, pady=5)
@@ -507,10 +515,10 @@ class LinOLS:
         options_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white")
         menu_bar.add_cascade(label="Options", menu=options_menu)
         options_menu.add_command(label="Find", command=self.find_dialog.find_dialog)
-        options_menu.add_command(label="Import", command=lambda: self.file_import.import_file(self))
+        options_menu.add_command(label="Import", command=lambda: self.file_import.import_file(self, False, ""))
         options_menu.add_command(label="Difference", command=lambda: self.diff_dialog.differences_dialog(self))
-        options_menu.add_command(label="Value Changer",
-                                 command=lambda event=None: self.value_dial.value_dialog(self, event))
+        options_menu.add_command(label="Value Changer", command=lambda event=None: self.value_dial.value_dialog(self, event))
+        options_menu.add_command(label="Find Hex Address", command=self.hex_address_dial.hex_find_dialog)
 
         mappack_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white")
         menu_bar.add_cascade(label="Mappack", menu=mappack_menu)

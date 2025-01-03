@@ -237,8 +237,6 @@ class Mode2D:
                 value = self.ui.current_values[index]
                 self.ui.text_value.configure(text=f"Value: {value:05}")
 
-                self.draw_canvas(self.ui)
-
             if 1 < selected_count <= 1000:
                 text_start = str(sel_start)
                 parts_start = text_start.split('.')
@@ -259,4 +257,4 @@ class Mode2D:
 
                 self.ui.display_sel = True
 
-                self.draw_canvas(self.ui)
+            self.draw_canvas(self.ui)

@@ -108,6 +108,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   ### Text Tab
   You can select multiple numbers with holding the `left click` and then draging with your mouse. You can only drag from up to down.
 
+  You can select one value and right click on text widget to copy value's hex address.
+
   `16-bit Lo-Hi and 16-Bit Hi-Lo` are for chaning the byte order and changing the mode will ERASE any changes done.
 
   `Selected: #` button is for showing you how many numbers do you have selected currently
@@ -201,6 +203,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Value Changes` is used to change multiple numbers at once.
 
+  `Find Hex Address` is used to find your hex address in opened file.
+
   ### Mappack Menu
   `Import Mappack` is used to import mappack / `.mp` files.
 
@@ -211,6 +215,10 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   Skip to the next changed value in 2d mode - `n` or `N`
   
-  Ship to the previous changed value in 2d mode - `v` or `V`ss
+  Ship to the previous changed value in 2d mode - `v` or `V`
 
   Value Dialog - Shift + 5 (Can be accessible via Options menu)
+
+  Ctrl+V on Text view for opening files fast
+
+  Ctrl+I on Text view for importing files fast
