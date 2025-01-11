@@ -109,6 +109,10 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   You can select multiple numbers with holding the `left click` and then draging with your mouse. You can only drag from up to down.
 
   You can select one value and right click on text widget to copy value's hex address.
+  
+  You can use 'm'/'M' to increase number of columns by one or use 'w'/'W' to decrease the columns by one.
+  
+  You can use 'Page Up' and 'Page Down' for faster navigation.
 
   `16-bit Lo-Hi and 16-Bit Hi-Lo` are for chaning the byte order and changing the mode will ERASE any changes done.
 
@@ -132,6 +136,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   ### 2D Tab
   You can select a number on 2d canva and you will automaticly show you that number in text mode.
+  
+  You can use 'Page Up' and 'Page Down' for faster navigation.
   
   `<` move one frame to the left.
   
