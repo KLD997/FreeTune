@@ -153,6 +153,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   To select the values hold left click and drag over the values you want to select (doesn't work on axis).
 
   To rotate 3D plot hold left click and drag it around.
+  
+  You can right click on both axis and any map value to change the axis's/map's properties.
 
   Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`
 
