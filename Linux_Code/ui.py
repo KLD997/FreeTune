@@ -18,6 +18,10 @@ class LinOLS:
         from maps import Maps_Utility
         from value_dialog_3d import Value_Dialog_3D
         from hex_address_dialog import HexAddressDialog
+        from map_properties_window import Map_properties
+        from x_axis_properties_window import x_axis_properties
+        from y_axis_properties_window import y_axis_properties
+
         self.window = window
         window.title("LinOLS")
 
@@ -42,6 +46,9 @@ class LinOLS:
         self.maps = Maps_Utility(self)
         self.value_dialog_3d = Value_Dialog_3D(self)
         self.hex_address_dial = HexAddressDialog(self)
+        self.map_properties = Map_properties(self)
+        self.x_axis_properties = x_axis_properties(self)
+        self.y_axis_properties = y_axis_properties(self)
 
         self.file_path = ""
         self.columns = 20
@@ -84,6 +91,13 @@ class LinOLS:
         self.end_index_maps = []
         self.maps_names = []
         self.signed_values = False
+        self.map_values = []
+        self.x_values = []
+        self.y_values = []
+        self.map_decimal = False
+        self.x_axis_decimal = False
+        self.y_axis_decimal = False
+        self.new_width = 0
 
         window.config(bg="#333")
 
@@ -118,7 +132,6 @@ class LinOLS:
         self.hex_address_menu.add_command(label="Copy Hex Address", command=self.text_addons.copy_hex_address)
 
         self.text_widget.bind("<Button-3>", self.text_addons.show_hex_address_menu)
-        self.window.bind("<Button-1>", self.text_addons.hide_hex_address_menu)
 
         center_frame = CTkFrame(tab1, fg_color="#333")
         center_frame.grid(row=1, column=0, pady=5)
@@ -309,10 +322,20 @@ class LinOLS:
             entry.bind("<ButtonRelease-1>", self.mode3d.end_interaction)
             entry.bind("<Control-a>", lambda event, j=x: self.mode3d.select_all(event, 0, j, "x"))
             entry.bind("<Tab>", self.mode3d.clear_highlight_on_tab)
+            entry.bind("<Button-3>", self.x_axis_properties.show_context_menu)
             row_x.append(entry)
             original_row_x.append("00000")
         self.entry_x_widgets.append(row_x)
         self.original_X.append(original_row_x)
+
+        self.right_click_map_menu = Menu(tab3, tearoff=0, bg="#333", fg="white")
+        self.right_click_map_menu.add_command(label="Map Properties", command=self.map_properties.map_properties_dialog)
+
+        self.right_click_x_axis = Menu(tab3, tearoff=0, bg="#333", fg="white")
+        self.right_click_x_axis.add_command(label="X-Axis Properties", command=self.x_axis_properties.x_axis_properties_dialog)
+
+        self.right_click_y_axis = Menu(tab3, tearoff=0, bg="#333", fg="white")
+        self.right_click_y_axis.add_command(label="Y-Axis Properties", command=self.y_axis_properties.y_axis_properties_dialog)
 
         self.entry_widgets = []
         self.original = []
@@ -332,6 +355,7 @@ class LinOLS:
                 entry.bind("<ButtonRelease-1>", self.mode3d.end_interaction)
                 entry.bind("<Control-a>", lambda event, i=k, j=x: self.mode3d.select_all(event, i, j, "map"))
                 entry.bind("<Tab>", self.mode3d.clear_highlight_on_tab)
+                entry.bind("<Button-3>", self.map_properties.show_context_menu)
                 row.append(entry)
                 original_row.append("00000")
             self.entry_widgets.append(row)
@@ -350,6 +374,7 @@ class LinOLS:
             entry.bind("<ButtonRelease-1>", self.mode3d.end_interaction)
             entry.bind("<Control-a>", lambda event, i=x: self.mode3d.select_all(event, i, 0, "y"))
             entry.bind("<Tab>", self.mode3d.clear_highlight_on_tab)
+            entry.bind("<Button-3>", self.y_axis_properties.show_context_menu)
             self.entry_y_widgets.append(entry)
             self.original_Y.append("00000")
 
@@ -450,8 +475,8 @@ class LinOLS:
                                        fg_color="#444", text_color="white", hover_color="#555", width=80)
         paste_selected_3d_btn.grid(row=0, column=2, padx=5)
 
-        self.paste_button = CTkButton(east_frame_3d, text="Paste", hover_color="#555", width=80,
-                                    command=lambda: self.mode3d.paste_data(False, [], 0, 0, False), fg_color="#444",
+        self.paste_button = CTkButton(east_frame_3d, text="Paste Map", hover_color="#555", width=80,
+                                    command=lambda: self.mode3d.paste_data(False, [], 0, 0, False, ""), fg_color="#444",
                                    text_color="white")
         self.paste_button.grid(row=0, column=3, padx=5)
 

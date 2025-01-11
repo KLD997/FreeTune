@@ -7,6 +7,8 @@ class HexAddressDialog:
 
     def hex_find_dialog(self):
         dialog_find = Toplevel(bg="#333")
+        self.dialog_find = dialog_find
+        dialog_find.resizable(False, False)
         screen_width = self.ui.window.winfo_screenwidth()
         screen_height = self.ui.window.winfo_screenheight()
         width = 200
@@ -37,6 +39,7 @@ class HexAddressDialog:
 
         self.ui.highlight_start = index
         self.highlight_hex(index)
+        self.dialog_find.destroy()
 
 
     def highlight_hex(self, index):

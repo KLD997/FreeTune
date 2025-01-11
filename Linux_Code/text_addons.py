@@ -39,13 +39,14 @@ class TextAddons:
 
     def on_outside_click(self, event, widget, func2, func3):
         if self.ui.edit_mode_active:
-            if widget.winfo_exists() and widget is not None:
-                try:
-                    x1, y1, x2, y2 = widget.bbox("all")
-                    if not (x1 <= event.x <= x2 and y1 <= event.y <= y2):
-                        self.save_edit(event, func2, func3)
-                except tkinter.TclError:
-                    return
+            if widget is not None:
+                if widget.winfo_exists():
+                    try:
+                        x1, y1, x2, y2 = widget.bbox("all")
+                        if not (x1 <= event.x <= x2 and y1 <= event.y <= y2):
+                            self.save_edit(event, func2, func3)
+                    except tkinter.TclError:
+                        return
 
     def save_edit(self, event, start_index=None, end_index=None):
         if self.entry_widget:
@@ -123,7 +124,7 @@ class TextAddons:
 
             index = row * self.ui.columns + col
 
-            self.ui.ori_value_label.configure(text=f"Ori: {self.ui.unpacked[index]:05}")
+            self.ui.ori_value_label.configure(text=f"Ori: {self.ui.unpacked[index - self.ui.shift_count]:05}")
         else:
             self.ui.ori_value_label.configure(text="Ori: 00000")
 
@@ -154,6 +155,56 @@ class TextAddons:
                     from File_Import import FileImport
                     file_import_ = FileImport(self.ui)
                     file_import_.import_file(self.ui, True, file_path)
+        if event.keysym == 'k' or event.keysym == 'K':
+            from maps import Maps_Utility
+            maps = Maps_Utility(self.ui)
+            maps.add_map()
+
+        if event.keysym == 'm' or event.keysym == 'M':
+            entry_content = self.ui.entry.get()
+
+            try:
+                value = int(entry_content)
+            except ValueError:
+                return
+
+            if not (0 <= value + 1 <= 60):
+                return
+
+            self.ui.columns = value + 1
+
+            self.ui.entry.delete(0, END)
+            self.ui.entry.insert(END, f"{self.ui.columns:02}")
+
+            from Utilities import Utility
+            utility = Utility(self.ui)
+            self.ui.window.update_idletasks()
+            utility.adjust_columns(self.ui, True)
+
+        if event.keysym == 'w' or event.keysym == 'W':
+            entry_content = self.ui.entry.get()
+
+            try:
+                value = int(entry_content)
+            except ValueError:
+                return
+
+            if not (0 <= value - 1 <= 60):
+                return
+
+            self.ui.columns = value - 1
+
+            self.ui.entry.delete(0, END)
+            self.ui.entry.insert(END, f"{self.ui.columns:02}")
+
+            from Utilities import Utility
+            utility = Utility(self.ui)
+            self.ui.window.update_idletasks()
+            utility.adjust_columns(self.ui, True)
+
+        if event.keysym == "Next" or event.keysym == "Prior":
+            return
+
         return "break"
 
     def update_selected_count(self, event):
@@ -173,9 +224,6 @@ class TextAddons:
             return
         if len(selected_text) == 5:
             self.ui.hex_address_menu.post(event.x_root, event.y_root)
-
-    def hide_hex_address_menu(self, event):
-        self.ui.hex_address_menu.unpost()
 
     def copy_hex_address(self):
         text = str(self.sel_start)

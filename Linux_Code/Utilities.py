@@ -178,22 +178,23 @@ class Utility:
         for (start_index, end_index), tag in tag_changes.items():
             self.ui.text_widget.tag_add(tag, start_index, end_index)
 
-    def adjust_columns(self, ui):
+    def adjust_columns(self, ui, shortcut=False):
         self.ui = ui
-        entry_content = self.ui.entry.get()
+        if not shortcut:
+            entry_content = self.ui.entry.get()
 
-        try:
-            value = int(entry_content)
-        except ValueError:
-            return
+            try:
+                value = int(entry_content)
+            except ValueError:
+                return
 
-        if not (0 <= value <= 60):
-            return
+            if not (0 <= value <= 60):
+                return
 
-        self.ui.columns = value
+            self.ui.columns = value
 
-        self.ui.entry.delete(0, END)
-        self.ui.entry.insert(END, f"{self.ui.columns:02}")
+            self.ui.entry.delete(0, END)
+            self.ui.entry.insert(END, f"{self.ui.columns:02}")
 
         max_frame = max(0, len(self.ui.unpacked) - self.ui.num_rows * self.ui.columns)
         self.ui.current_frame = min(self.ui.current_frame, max_frame)
@@ -232,7 +233,6 @@ class Utility:
         self.ui.return_text = True
 
         self.mode2d.draw_canvas(self.ui)
-        self.ui.window.update_idletasks()
 
     def check_value_changes(self, ui):
         self.ui = ui
@@ -300,6 +300,20 @@ class Utility:
             self.value_changes_skipping(True)
         if event.key == 'v' or event.key == 'V':
             self.value_changes_skipping(False)
+        if event.key == "pagedown":
+            from Module_2D import Mode2D
+            mode2d = Mode2D(self.ui)
+            self.ui.red_line = 0
+            self.ui.window.update_idletasks()
+            mode2d.highlight_text(self.ui.red_line)
+            mode2d.next_page()
+        if event.key == "pageup":
+            from Module_2D import Mode2D
+            mode2d = Mode2D(self.ui)
+            self.ui.red_line = 0
+            self.ui.window.update_idletasks()
+            mode2d.highlight_text(self.ui.red_line)
+            mode2d.prev_page()
 
     def value_changes_skipping(self, forward):
         current_index = self.ui.current_frame + self.ui.red_line

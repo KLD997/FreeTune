@@ -108,6 +108,8 @@ class Mode2D:
         self.ui.window.update_idletasks()
 
     def on_canvas_click(self, event):
+        if not self.ui.unpacked:
+            return
         x_pos = event.xdata
         if x_pos is not None:
             self.ui.display_sel = False
