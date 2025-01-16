@@ -52,7 +52,9 @@ class TextAddons:
         if self.entry_widget:
             new_text = self.entry_widget.get().strip()
             try:
-                int(new_text)
+                val = int(new_text)
+                if not (0 <= val <= 65535):
+                    raise ValueError
             except ValueError:
                 self.entry_widget.destroy()
                 self.ui.text_widget.tag_remove(SEL, 1.0, END)

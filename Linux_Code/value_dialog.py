@@ -1,5 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
+from customtkinter import *
+
 
 class ValueDialog:
     def __init__(self, ui):
@@ -14,8 +16,8 @@ class ValueDialog:
         screen_width = self.ui.window.winfo_screenwidth()
         screen_height = self.ui.window.winfo_screenheight()
 
-        width = 250
-        height = 125
+        width = 200
+        height = 130
         x = (screen_width / 2) - (width / 2)
         y = (screen_height / 2) - (height / 2)
 
@@ -34,20 +36,20 @@ class ValueDialog:
 
         self.new_text = ""
 
-        self.entry = Entry(self.value_dialog_window, bg="#555", fg="white", highlightthickness=0, font=('Arial', 11))
-        self.entry.grid(row=0, column=0, columnspan=4, padx=40, pady=10)
+        self.entry = CTkEntry(self.value_dialog_window, fg_color="#555", text_color="white")
+        self.entry.grid(row=0, column=0, columnspan=4, pady=10)
 
-        button1 = Button(self.value_dialog_window, text="=", font=('Arial', 11), bg="#444", highlightthickness=0, fg="white", command=lambda: self.change_value("="))
-        button2 = Button(self.value_dialog_window, text="+", font=('Arial', 11), bg="#444", highlightthickness=0, fg="white", command=lambda: self.change_value("+"))
-        button3 = Button(self.value_dialog_window, text="-", font=('Arial', 11), bg="#444", highlightthickness=0, fg="white", command=lambda: self.change_value("-"))
-        button4 = Button(self.value_dialog_window, text="%", font=('Arial', 11), bg="#444", highlightthickness=0, fg="white", command=lambda: self.change_value("%"))
+        button1 = CTkButton(self.value_dialog_window, text="=", width=40, fg_color="#444", hover_color="#555", text_color="white", command=lambda: self.change_value("="))
+        button2 = CTkButton(self.value_dialog_window, text="+", width=40, fg_color="#444", hover_color="#555", text_color="white", command=lambda: self.change_value("+"))
+        button3 = CTkButton(self.value_dialog_window, text="-", width=40, fg_color="#444", hover_color="#555", text_color="white", command=lambda: self.change_value("-"))
+        button4 = CTkButton(self.value_dialog_window, text="%", width=40, fg_color="#444", hover_color="#555", text_color="white", command=lambda: self.change_value("%"))
 
         button1.grid(row=1, column=0, padx=5, pady=5)
         button2.grid(row=1, column=1, padx=5, pady=5)
         button3.grid(row=1, column=2, padx=5, pady=5)
         button4.grid(row=1, column=3, padx=5, pady=5)
 
-        ok_button = Button(self.value_dialog_window, text="Ok", command= lambda: self.calculate(self.ui), font=('Arial', 11), bg="#444", highlightthickness=0, fg="white", width=6)
+        ok_button = CTkButton(self.value_dialog_window, text="Ok", command= lambda: self.calculate(self.ui),fg_color="#444", hover_color="#555", text_color="white", width=80)
         ok_button.grid(row=2, column=0, columnspan=4, pady=10)
         self.entry.focus_set()
 

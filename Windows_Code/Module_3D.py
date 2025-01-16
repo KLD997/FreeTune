@@ -740,7 +740,12 @@ class Mode3D:
                 entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
             else:
                 if not self.ui.map_decimal:
-                    value = int(entry.get())
+                    try:
+                        value = int(entry.get())
+                    except ValueError:
+                        entry.delete(0, END)
+                        entry.insert(END, f"{self.ui.original[row][col]:05}")
+                        return
                     entry.delete(0, END)
                     entry.insert(END, f"{value:05}")
                 else:
@@ -759,7 +764,11 @@ class Mode3D:
                 entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
             else:
                 if not self.ui.x_axis_decimal:
-                    value = int(entry.get())
+                    try:
+                        value = int(entry.get())
+                    except ValueError:
+                        entry.delete(0, END)
+                        entry.insert(END, f"{self.ui.original_X[row][col]:05}")
                     entry.delete(0, END)
                     entry.insert(END, f"{value:05}")
                 else:
@@ -778,7 +787,11 @@ class Mode3D:
                 entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
             else:
                 if not self.ui.y_axis_decimal:
-                    value = int(entry.get())
+                    try:
+                        value = int(entry.get())
+                    except ValueError:
+                        entry.delete(0, END)
+                        entry.insert(END, f"{self.ui.original_Y[row]:05}")
                     entry.delete(0, END)
                     entry.insert(END, f"{value:05}")
                 else:

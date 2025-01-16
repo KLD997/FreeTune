@@ -1,5 +1,8 @@
 from tkinter import *
 
+from customtkinter import CTkButton, CTkLabel, CTkEntry
+
+
 class Find_Dialog:
     def __init__(self, ui):
         self.ui = ui
@@ -9,20 +12,20 @@ class Find_Dialog:
         screen_width = self.ui.window.winfo_screenwidth()
         screen_height = self.ui.window.winfo_screenheight()
         width = 200
-        height = 100
+        height = 120
         x = (screen_width / 2) - (width / 2)
         y = (screen_height / 2) - (height / 2)
         dialog_find.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
         dialog_find.title("Find")
-        label = Label(dialog_find, text="Enter the value:", bg="#333", fg="white")
+        label = CTkLabel(dialog_find, text="Enter the value:", fg_color="#333", text_color="white", font=("Roboto", 14))
         label.pack(pady=5)
-        self.find_entry = Entry(dialog_find, bg="#333", fg="white", highlightthickness=0)
+        self.find_entry = CTkEntry(dialog_find, fg_color="#555", text_color="white")
         self.find_entry.pack(pady=5)
-        button_find = Button(dialog_find, text="Find", command=self.find, bg="#444", fg="white", highlightthickness=0)
+        button_find = CTkButton(dialog_find, text="Find", command=self.find, fg_color="#444", text_color="white", hover_color="#555", width=20)
         button_find.pack(side=RIGHT, pady=5, padx=5)
-        button_previous = Button(dialog_find, text="Previous", command=self.find_previous, bg="#444", fg="white", highlightthickness=0)
+        button_previous = CTkButton(dialog_find, text="Previous", command=self.find_previous, fg_color="#444", text_color="white", hover_color="#555", width=20)
         button_previous.pack(side=LEFT, pady=5, padx=5)
-        button_next = Button(dialog_find, text="Next", command=self.find_next, bg="#444", fg="white", highlightthickness=0)
+        button_next = CTkButton(dialog_find, text="Next", command=self.find_next, fg_color="#444", text_color="white", hover_color="#555", width=20)
         button_next.pack(side=LEFT, pady=5)
 
     def find(self):

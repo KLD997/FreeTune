@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+from customtkinter import *
 
 class HexAddressDialog:
     def __init__(self, ui):
@@ -11,17 +12,17 @@ class HexAddressDialog:
         dialog_find.resizable(False, False)
         screen_width = self.ui.window.winfo_screenwidth()
         screen_height = self.ui.window.winfo_screenheight()
-        width = 200
-        height = 100
+        width = 180
+        height = 120
         x = (screen_width / 2) - (width / 2)
         y = (screen_height / 2) - (height / 2)
         dialog_find.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
         dialog_find.title("Find Hex Address")
-        label = Label(dialog_find, text="Enter a hex address:", bg="#333", fg="white", font=8)
+        label = CTkLabel(dialog_find, text="Enter a hex address:", fg_color="#333", text_color="white", font=("Roboto", 15))
         label.pack(pady=5)
-        self.find_entry = Entry(dialog_find, bg="#333", fg="white", highlightthickness=0)
+        self.find_entry = CTkEntry(dialog_find, fg_color="#555", text_color="white", width=120)
         self.find_entry.pack(pady=5)
-        button_find = Button(dialog_find, text="Find", command=self.find, bg="#444", fg="white", highlightthickness=0)
+        button_find = CTkButton(dialog_find, text="Find", command=self.find, fg_color="#444", text_color="white", hover_color="#555", width=60)
         button_find.pack(pady=5, padx=5)
 
     def find(self):
