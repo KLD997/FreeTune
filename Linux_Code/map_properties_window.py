@@ -36,7 +36,7 @@ class Map_properties:
         size_frame = CTkFrame(property_frame, fg_color="#333")
         size_frame.grid(row=1, column=0, columnspan=2, pady=10, ipadx=18)
 
-        label_size = CTkLabel(size_frame, fg_color="#333", bg_color="white", text="Size:  ", font=("Roboto", 12))
+        label_size = CTkLabel(size_frame, fg_color="#333", bg_color="white", text="Size:   ", font=("Roboto", 12))
         label_size.grid(row=0, column=0, padx=10)
 
         self.selected_option = StringVar(value="Size")

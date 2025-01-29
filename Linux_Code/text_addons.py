@@ -29,9 +29,9 @@ class TextAddons:
         if self.entry_widget:
             self.entry_widget.destroy()
 
-        self.entry_widget = Entry(self.ui.window, bg="#555", fg="white", highlightthickness=0, bd=0, font=("Courier", 9))
+        self.entry_widget = Entry(self.ui.window, bg="#555", fg="white", highlightthickness=0, bd=0, font=("Courier New", 9))
         self.entry_widget.insert(0, text)
-        self.entry_widget.place(x=x_root + 14, y=y_root + 37, width=40, height=13)
+        self.entry_widget.place(x=x_root + 14, y=y_root + 42, width=40, height=13)
 
         self.entry_widget.focus_set()
         self.entry_widget.bind("<Return>", lambda e: self.save_edit(e, start_index, end_index))

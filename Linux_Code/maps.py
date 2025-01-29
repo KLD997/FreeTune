@@ -360,6 +360,7 @@ class Maps_Utility:
                     file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
             self.ui.map_list_counter -= 1
             self.ui.map_list.delete(selected_index)
+            self.ui.text_widget.tag_remove(item, 1.0, END)
 
     def show_context_menu(self, event):
         selected_index = self.ui.map_list.curselection()

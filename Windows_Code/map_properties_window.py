@@ -7,9 +7,11 @@ class Map_properties:
 
     def map_properties_dialog(self):
         self.value_dialog_window = CTkToplevel(fg_color="#333")
-
+        
         self.value_dialog_window.resizable(False, False)
 
+        self.value_dialog_window.focus_force()
+        
         screen_width = self.ui.window.winfo_screenwidth()
         screen_height = self.ui.window.winfo_screenheight()
 

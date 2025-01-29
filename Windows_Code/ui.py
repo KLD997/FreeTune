@@ -121,7 +121,7 @@ class LinOLS:
         text_frame = Frame(tab1, bg="#333")
         text_frame.grid(row=0, column=0, padx=5, pady=5, sticky=NSEW)
 
-        self.text_widget = Text(text_frame, bg="#333333", bd=0, highlightthickness=0, fg="white", font=("Consolas", 9))
+        self.text_widget = Text(text_frame, bg="#333333", bd=0, highlightthickness=0, fg="white", font=("Courier New", 9))
         self.text_widget.pack(side=LEFT, fill=BOTH, expand=True)
         self.text_widget.configure(insertbackground='white', undo=True)
 
@@ -130,7 +130,7 @@ class LinOLS:
 
         self.text_widget.config(yscrollcommand=self.scroll_bar.set)
 
-        self.hex_address_menu = Menu(tab1, tearoff=0, bg="#333", fg="white")
+        self.hex_address_menu = Menu(tab1, tearoff=0, bg="#333", fg="white", borderwidth=0)
         self.hex_address_menu.add_command(label="Copy Hex Address", command=self.text_addons.copy_hex_address)
 
         self.text_widget.bind("<Button-3>", self.text_addons.show_hex_address_menu)
@@ -361,14 +361,14 @@ class LinOLS:
         self.entry_x_widgets.append(row_x)
         self.original_X.append(original_row_x)
 
-        self.right_click_map_menu = Menu(tab3, tearoff=0, bg="#333", fg="white")
+        self.right_click_map_menu = Menu(tab3, tearoff=0, bg="#333", fg="white", borderwidth=0)
         self.right_click_map_menu.add_command(label="Map Properties", command=self.map_properties.map_properties_dialog)
 
-        self.right_click_x_axis = Menu(tab3, tearoff=0, bg="#333", fg="white")
+        self.right_click_x_axis = Menu(tab3, tearoff=0, bg="#333", fg="white", borderwidth=0)
         self.right_click_x_axis.add_command(label="X-Axis Properties",
                                             command=self.x_axis_properties.x_axis_properties_dialog)
 
-        self.right_click_y_axis = Menu(tab3, tearoff=0, bg="#333", fg="white")
+        self.right_click_y_axis = Menu(tab3, tearoff=0, bg="#333", fg="white", borderwidth=0)
         self.right_click_y_axis.add_command(label="Y-Axis Properties",
                                             command=self.y_axis_properties.y_axis_properties_dialog)
 
@@ -524,7 +524,7 @@ class LinOLS:
 
         self.map_list.bind('<Double-Button-1>', self.maps.on_double_click)
 
-        self.remove_menu = Menu(tab4, tearoff=0, bg="#333", fg="white")
+        self.remove_menu = Menu(tab4, tearoff=0, bg="#333", fg="white", borderwidth=0)
         self.remove_menu.add_command(label="Remove", command=self.maps.remove_item)
 
         self.map_list.bind("<Button-3>", self.maps.show_context_menu)
@@ -534,12 +534,12 @@ class LinOLS:
         menu_bar = Menu(self.window, bg="#333", fg="white")
         self.window.config(menu=menu_bar)
 
-        file_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white")
+        file_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white", borderwidth=0)
         menu_bar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Open", command=lambda: self.text_view_.open_file(self))
         file_menu.add_command(label="Save", command=self.text_view_.save_file)
 
-        options_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white")
+        options_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white", borderwidth=0)
         menu_bar.add_cascade(label="Options", menu=options_menu)
         options_menu.add_command(label="Find", command=self.find_dialog.find_dialog)
         options_menu.add_command(label="Import", command=lambda: self.file_import.import_file(self, False, ""))
@@ -547,7 +547,7 @@ class LinOLS:
         options_menu.add_command(label="Value Changer", command=lambda event=None: self.value_dial.value_dialog(self, event))
         options_menu.add_command(label="Find Hex Address", command=self.hex_address_dial.hex_find_dialog)
 
-        mappack_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white")
+        mappack_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white", borderwidth=0)
         menu_bar.add_cascade(label="Mappack", menu=mappack_menu)
         mappack_menu.add_command(label="Import Mappack", command=self.maps.import_map)
         mappack_menu.add_command(label="Export Mappack", command=self.maps.export_map)

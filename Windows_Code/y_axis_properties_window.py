@@ -10,6 +10,8 @@ class y_axis_properties:
 
         self.value_dialog_window.resizable(False, False)
 
+        self.value_dialog_window.focus_force()
+
         screen_width = self.ui.window.winfo_screenwidth()
         screen_height = self.ui.window.winfo_screenheight()
 
