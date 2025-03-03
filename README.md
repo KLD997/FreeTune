@@ -108,7 +108,7 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   ### Text Tab
   You can select multiple numbers with holding the `left click` and then draging with your mouse. You can only drag from up to down.
 
-  You can select one value and right click on text widget to copy value's hex address.
+  You can select one value and right click on text widget to `copy value's hex address` or `open a map`.
   
   You can use 'm'/'M' to increase number of columns by one or use 'w'/'W' to decrease the columns by one.
   
