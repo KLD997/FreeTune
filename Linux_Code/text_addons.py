@@ -1,3 +1,4 @@
+import time
 import tkinter
 from tkinter import *
 from tkinter import messagebox
@@ -149,7 +150,7 @@ class TextAddons:
                     text_view_ = TextView(self.ui)
                     text_view_.display_text(self.ui)
 
-        if (event.keysym == 'i' or event.keysym == 'I') and event.state & 0x0004:
+        elif (event.keysym == 'i' or event.keysym == 'I') and event.state & 0x0004:
             file_path = self.ui.window.clipboard_get()
             if os.path.isfile(file_path):
                 result = messagebox.askyesno("Import a new file", "Do you really want to import a new file?")
@@ -157,12 +158,8 @@ class TextAddons:
                     from File_Import import FileImport
                     file_import_ = FileImport(self.ui)
                     file_import_.import_file(self.ui, True, file_path)
-        if event.keysym == 'k' or event.keysym == 'K':
-            from maps import Maps_Utility
-            maps = Maps_Utility(self.ui)
-            maps.add_map()
 
-        if event.keysym == 'm' or event.keysym == 'M':
+        elif event.keysym == 'm' or event.keysym == 'M':
             entry_content = self.ui.entry.get()
 
             try:
@@ -183,7 +180,7 @@ class TextAddons:
             self.ui.window.update_idletasks()
             utility.adjust_columns(self.ui, True)
 
-        if event.keysym == 'w' or event.keysym == 'W':
+        elif event.keysym == 'w' or event.keysym == 'W':
             entry_content = self.ui.entry.get()
 
             try:
@@ -204,7 +201,7 @@ class TextAddons:
             self.ui.window.update_idletasks()
             utility.adjust_columns(self.ui, True)
 
-        if event.keysym == "Next" or event.keysym == "Prior":
+        elif event.keysym == "Next" or event.keysym == "Prior":
             return
 
         return "break"

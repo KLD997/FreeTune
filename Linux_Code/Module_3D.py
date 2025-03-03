@@ -724,11 +724,10 @@ class Mode3D:
             for col in range(cols):
                 self.check_difference(None, row, col)
 
+            self.check_difference_y(None, row)
+
         for col in range(cols):
             self.check_difference_x(None, col)
-
-        for row in range(rows):
-            self.check_difference_y(None, row)
 
     def on_focus_out(self, event, row, col, mode):
         if mode == "map":

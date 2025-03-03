@@ -7,6 +7,8 @@ class Mode2D:
     def __init__(self, ui):
         self.ui = ui
         self.last_page_change_time = 0
+        self.is_dragging = False
+        self.last_x = 0
 
     def scale_to_fixed_range(self, data, min_val=0, max_val=65535):
         return [min(max(val, min_val), max_val) for val in data]
@@ -260,3 +262,18 @@ class Mode2D:
                 self.ui.display_sel = True
 
             self.draw_canvas(self.ui)
+
+    def on_button_press(self, event):
+        self.is_dragging = True
+        self.last_x = event.x
+
+    def on_button_release(self, event):
+        self.is_dragging = False
+
+    def on_mouse_move(self, event):
+        if self.is_dragging:
+            delta_x = event.x - self.last_x
+            azim = self.ui.ax_3d.azim + delta_x
+            self.ui.ax_3d.view_init(elev=20, azim=azim % 360)
+            self.ui.canvas_3d.draw()
+            self.last_x = event.x

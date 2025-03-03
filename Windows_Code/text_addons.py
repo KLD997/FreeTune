@@ -157,10 +157,6 @@ class TextAddons:
                     from File_Import import FileImport
                     file_import_ = FileImport(self.ui)
                     file_import_.import_file(self.ui, True, file_path)
-        if event.keysym == 'k' or event.keysym == 'K':
-            from maps import Maps_Utility
-            maps = Maps_Utility(self.ui)
-            maps.add_map()
 
         if event.keysym == 'm' or event.keysym == 'M':
             entry_content = self.ui.entry.get()

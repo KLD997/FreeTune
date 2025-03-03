@@ -132,6 +132,24 @@ class Maps_Utility:
             file.write(f"{1.0}\n")
             file.write(f"{0}")
 
+    def open_map_right_click(self):
+        sel_start = self.ui.text_widget.index(SEL_FIRST)
+        tag_name = self.ui.text_widget.tag_names(sel_start)[1]
+
+        with open(self.file_path, 'r') as file:
+            content = file.read().split('\n')
+            for i in range(len(content)):
+                if content[i] == tag_name:
+                    if i != 0:
+                        map_index = (i + 1) // 10
+                    else:
+                        map_index = 0
+                    self.last_map_index = map_index
+                    self.double_click = True
+                    self.update_3d_from_text()
+                    self.ui.notebook.select(2)
+                    break
+
     def on_double_click(self, event):
         selection = self.ui.map_list.curselection()
         if not selection:
@@ -341,6 +359,9 @@ class Maps_Utility:
     def remove_item(self):
         selected_index = self.ui.map_list.curselection()
 
+        start_index = 0
+        end_index = 0
+
         if selected_index:
             index = selected_index[0]
             if self.last_map_index == index:
@@ -353,6 +374,8 @@ class Maps_Utility:
                 content = file.read().split("\n")
                 for i in range(len(content)):
                     if content[i] == item:
+                        start_index = int(content[i + 1])
+                        end_index = int(content[i + 2])
                         del content[i:i + 10]
                         break
             with open(self.file_path, 'w') as file:
@@ -361,6 +384,14 @@ class Maps_Utility:
             self.ui.map_list_counter -= 1
             self.ui.map_list.delete(selected_index)
             self.ui.text_widget.tag_remove(item, 1.0, END)
+
+            self.ui.start_index_maps.remove(start_index + self.ui.shift_count)
+            self.ui.end_index_maps.remove(end_index + self.ui.shift_count)
+
+            from Module_2D import Mode2D
+            mode2d = Mode2D(self.ui)
+
+            mode2d.draw_canvas(self.ui)
 
     def show_context_menu(self, event):
         selected_index = self.ui.map_list.curselection()

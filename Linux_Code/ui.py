@@ -130,6 +130,7 @@ class LinOLS:
 
         self.hex_address_menu = Menu(tab1, tearoff=0, bg="#333", fg="white", borderwidth=0)
         self.hex_address_menu.add_command(label="Copy Hex Address", command=self.text_addons.copy_hex_address)
+        self.hex_address_menu.add_command(label="Open Map", command=self.maps.open_map_right_click)
 
         self.text_widget.bind("<Button-3>", self.text_addons.show_hex_address_menu)
 
@@ -394,6 +395,10 @@ class LinOLS:
         self.canvas_3d = FigureCanvasTkAgg(self.fig_3d, master=self.right_frame_3d)
         self.canvas_widget_3d = self.canvas_3d.get_tk_widget()
         self.canvas_widget_3d.grid(row=0, column=0, sticky="nsew")
+
+        self.canvas_widget_3d.bind("<ButtonPress-1>", self.mode2d.on_button_press)
+        self.canvas_widget_3d.bind("<ButtonRelease-1>", self.mode2d.on_button_release)
+        self.canvas_widget_3d.bind("<Motion>", self.mode2d.on_mouse_move)
 
         self.start_x = None
         self.start_y = None
