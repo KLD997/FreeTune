@@ -1,366 +1,240 @@
 import math
-from tkinter import *
-from tkinter import messagebox
 import re
-import numpy as np
+from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import QTableWidgetItem, QMessageBox, QApplication, QInputDialog
 
 class Mode3D:
     def __init__(self, ui):
         self.ui = ui
         self.map_precision = 0
+        self.x_precision = 0
+        self.y_precision = 0
 
-    def check_difference_3d(self, i, j):
-        try:
-            if not self.ui.map_decimal:
-                current_value = int(self.ui.entry_widgets[i][j].get())
-                original_value = int(self.ui.original[i][j])
+    def copy_selected_3d(self):
+        if not self.check_selection_rectangle_3d() and not self.check_selection_consecutive_3d():
+            QMessageBox.warning(self.ui, "Warning", "Data selection is not correct!")
+            return
+
+        selected_items = self.ui.box_layout.selectedItems()
+
+        last_row = -1 # for storing previous row
+
+        clipboard = QApplication.clipboard()
+        clipboard.clear()
+
+        text_values = ""
+
+        for item in selected_items:
+            row = item.row() # current row
+            col = item.column() # current column
+
+            entry = self.ui.box_layout.item(row, col)
+            value = entry.text()
+
+            if last_row == -1:
+                text_values += value
+            elif row == last_row:
+                text_values += '\t' + value
             else:
-                current_value = float(self.ui.entry_widgets[i][j].get())
-                original_value = float(self.ui.original[i][j])
-        except ValueError:
-            return "break"
+                text_values += '\n' + value
 
-        difference = current_value - original_value
-        self.ui.label_diff_3d.configure(text=f"Diff: {difference}")
+            last_row = row
 
-    def copy_selected_cells(self):
-        selected_content = ""
-        for i in range(self.ui.rows_3d):
-            row_content = ""
-            for j in range(self.ui.columns_3d):
-                entry = self.ui.entry_widgets[i][j]
-                if entry.cget('bg') == 'lightblue':
-                    row_content += entry.get() + "\t"
-            if row_content:
-                selected_content += row_content.strip() + "\n"
-        selected_content = selected_content.strip()
-        self.ui.window.clipboard_clear()
-        self.ui.window.clipboard_append(selected_content)
+        clipboard.setText(text_values)
 
-    def start_interaction(self, event, i, j):
-        x, y = event.x_root, event.y_root
-        self.start_x = x
-        self.start_y = y
-        self.end_x = x
-        self.end_y = y
-        self.selected_cells = {(i, j)}
-        self.toggle_selection(i, j)
-        self.highlight_cells()
+    def check_selection_rectangle_3d(self):
+        selected_items = self.ui.box_layout.selectedItems()
 
-    def start_interaction_x(self, event, j):
-        x, y = event.x_root, event.y_root
-        self.start_x = x
-        self.start_y = y
-        self.end_x = x
-        self.end_y = y
-        self.selected_cells = {(None, j)}
-        self.highlight_cells()
+        if len(selected_items) < 1 or len(selected_items) > 1200:
+            return False
 
-    def start_interaction_y(self, event, i):
-        x, y = event.x_root, event.y_root
-        self.start_x = x
-        self.start_y = y
-        self.end_x = x
-        self.end_y = y
-        self.selected_cells = {(i, None)}
-        self.highlight_cells()
+        last_row = selected_items[0].row()
+        start_col = selected_items[0].column()
 
-    def end_interaction(self, event):
-        self.start_x = None
-        self.start_y = None
-        self.end_x = None
-        self.end_y = None
+        for i in range(1, len(selected_items)):
+            row = selected_items[i].row()
+            col = selected_items[i].column()
 
-    def drag_to_select(self, event):
-        self.end_x = event.x_root
-        self.end_y = event.y_root
-        self.highlight_cells()
+            if last_row != row and not last_row + 1 == row:
+                return False
 
-        if self.start_x == self.end_x and self.start_y == self.end_y:
-            i, j = self.get_cell_index(self.start_x, self.start_y)
-            if i is not None and j is not None:
-                self.toggle_selection(i, j)
+            if last_row != row and start_col != col:
+                return False
 
-    def highlight_cells(self):
-        if self.start_x is not None and self.start_y is not None:
-            start_i, start_j = self.get_cell_index(self.start_x, self.start_y)
-            if start_i is not None and start_j is not None:
-                end_i, end_j = self.get_cell_index(self.end_x, self.end_y)
-                if end_i is not None and end_j is not None:
-                    min_i = min(start_i, end_i)
-                    max_i = max(start_i, end_i)
-                    min_j = min(start_j, end_j)
-                    max_j = max(start_j, end_j)
 
-                    for i in range(self.ui.rows_3d):
-                        for j in range(self.ui.columns_3d):
-                            entry = self.ui.entry_widgets[i][j]
+            last_row = row
 
-                            if min_i <= i <= max_i and min_j <= j <= max_j:
-                                if (i, j) not in self.selected_cells:
-                                    entry.configure(bg="lightblue")
-                            else:
-                                if (i, j) in self.selected_cells:
-                                    entry.configure(bg="lightblue")
-                                else:
-                                    entry.configure(bg="white")
+        return True
 
-    def toggle_selection(self, i, j):
-        if (i, j) in self.selected_cells:
-            self.selected_cells.remove((i, j))
-            self.ui.entry_widgets[i][j].configure(bg="white")
-        else:
-            self.selected_cells.add((i, j))
-            self.ui.entry_widgets[i][j].configure(bg="lightblue")
+    def check_selection_consecutive_3d(self):
+        selected_items = self.ui.box_layout.selectedItems()
 
-    def get_cell_index(self, x, y):
-        for i in range(self.ui.rows_3d):
-            for j in range(self.ui.columns_3d):
-                entry = self.ui.entry_widgets[i][j]
-                entry_x = entry.winfo_rootx()
-                entry_y = entry.winfo_rooty()
-                entry_width = entry.winfo_width()
-                entry_height = entry.winfo_height()
-                if entry_x <= x <= entry_x + entry_width and entry_y <= y <= entry_y + entry_height:
-                    return i, j
-        return None, None
+        if len(selected_items) < 1 or len(selected_items) > 1200:
+            return False
+
+        last_row = selected_items[0].row()
+        start_col = selected_items[0].column()
+
+        for i in range(1, len(selected_items)):
+            row = selected_items[i].row()
+            col = selected_items[i].column()
+
+            if last_row != row and not last_row + 1 == row:
+                return False
+
+            if start_col + 1 == self.ui.columns:
+                start_col = 0
+            else:
+                start_col += 1
+
+            if col != start_col:
+                return False
+
+            last_row = row
+
+        return True
+
 
     def increase_selected_text(self, int_value):
         try:
             increase_value = int_value
-            for i in range(self.ui.rows_3d):
-                for j in range(self.ui.columns_3d):
-                    entry = self.ui.entry_widgets[i][j]
-                    if entry.cget('bg') == 'lightblue':
-                        if not self.ui.map_decimal:
-                            current_value = int(entry.get())
-                        else:
-                            current_value = float(entry.get().strip())
-                        new_value = current_value + increase_value
-                        if 0 > new_value or new_value > 65535:
-                            raise ValueError
-                        entry.delete(0, END)
-                        if not self.ui.map_decimal:
-                            new_value_str = '{:05d}'.format(new_value)
-                            entry.insert(END, new_value_str)
-                        else:
-                            new_data = float(round(new_value, self.map_precision))
-                            parts = str(new_data).split('.')
-                            decimal_length = len(parts[1])
-                            str_data = str(new_data)
-                            if decimal_length < self.map_precision:
-                                for x in range(self.map_precision - decimal_length):
-                                    str_data += "0"
-                            parts = str_data.split('.')
-                            self.ui.entry_widgets[i][j].insert(0, f"{int(parts[0]):05}.{parts[1]} ")
-                        self.check_difference(event=None, i=i, j=j)
-        except ValueError:
-            messagebox.showerror("Error", "Please enter a valid number.")
+            selected_items = self.ui.box_layout.selectedItems()
+            if not selected_items:
+                return
 
-        self.update_3d_view()
+            for i in range(len(selected_items)):
+                row = selected_items[i].row()
+                col = selected_items[i].column()
+                entry = self.ui.box_layout.item(row, col)
+                if not self.ui.map_decimal:
+                    current_value = int(entry.text())
+                else:
+                    current_value = float(entry.text().strip())
+                new_value = current_value + increase_value
+                if 0 > new_value or new_value > 65535:
+                    raise ValueError
+                if not self.ui.map_decimal:
+                    new_value_str = f"{new_value:05}"
+                    entry.setText(new_value_str)
+                else:
+                    new_data = float(round(new_value, self.map_precision))
+                    parts = str(new_data).split('.')
+                    decimal_length = len(parts[1])
+                    str_data = str(new_data)
+                    if decimal_length < self.map_precision:
+                        for x in range(self.map_precision - decimal_length):
+                            str_data += "0"
+                    parts = str_data.split('.')
+                    entry.setText(f"{int(parts[0]):05}.{parts[1]}")
+
+                self.check_difference(row, col)
+
+        except ValueError:
+            QMessageBox.warning(self.ui, "Warning", "Please enter a valid number.")
 
     def increase_selected_text_per(self, float_value):
         try:
             percentage_increase = float_value / 100.0
-            for i in range(self.ui.rows_3d):
-                for j in range(self.ui.columns_3d):
-                    entry = self.ui.entry_widgets[i][j]
-                    if entry.cget('bg') == 'lightblue':
-                        if not self.ui.map_decimal:
-                            current_value = int(entry.get())
-                            increase_value = int(current_value * percentage_increase)
-                        else:
-                            current_value = float(entry.get())
-                            increase_value = float(current_value * percentage_increase)
-                        new_value = current_value + increase_value
-                        if 0 > new_value or new_value > 65535:
-                            raise ValueError
-                        entry.delete(0, END)
-                        if not self.ui.map_decimal:
-                            new_value_str = '{:05d}'.format(math.ceil(new_value))
-                            entry.insert(END, new_value_str)
-                        else:
-                            new_data = float(round(math.ceil(new_value), self.map_precision))
-                            parts = str(new_data).split('.')
-                            decimal_length = len(parts[1])
-                            str_data = str(new_data)
-                            if decimal_length < self.map_precision:
-                                for x in range(self.map_precision - decimal_length):
-                                    str_data += "0"
-                            parts = str_data.split('.')
-                            self.ui.entry_widgets[i][j].insert(0, f"{int(parts[0]):05}.{parts[1]} ")
-                        self.check_difference(event=None, i=i, j=j)
+            selected_items = self.ui.box_layout.selectedItems()
+            if not selected_items:
+                return
+
+            for i in range(len(selected_items)):
+                row = selected_items[i].row()
+                col = selected_items[i].column()
+                entry = self.ui.box_layout.item(row, col)
+                if not self.ui.map_decimal:
+                    current_value = int(entry.text())
+                    increase_value = int(current_value * percentage_increase)
+                else:
+                    current_value = float(entry.text())
+                    increase_value = float(current_value * percentage_increase)
+                new_value = current_value + increase_value
+                if 0 > new_value or new_value > 65535:
+                    raise ValueError
+                if not self.ui.map_decimal:
+                    new_value_str = f"{math.ceil(new_value):05}"
+                    entry.setText(new_value_str)
+                else:
+                    new_data = float(round(math.ceil(new_value), self.map_precision))
+                    parts = str(new_data).split('.')
+                    decimal_length = len(parts[1])
+                    str_data = str(new_data)
+                    if decimal_length < self.map_precision:
+                        for x in range(self.map_precision - decimal_length):
+                            str_data += "0"
+                    parts = str_data.split('.')
+                    entry.setText(f"{int(parts[0]):05}.{parts[1]}")
+
+                self.check_difference(row, col)
+
         except ValueError:
-            messagebox.showerror("Error", "Please enter a valid percentage.")
-        self.update_3d_view()
+            QMessageBox.warning(self.ui, "Warning", "Please enter a valid number.")
 
     def set_text(self, int_value):
         try:
-            set_text = int_value
-            for i in range(self.ui.rows_3d):
-                for j in range(self.ui.columns_3d):
-                    entry = self.ui.entry_widgets[i][j]
-                    if entry.cget('bg') == 'lightblue':
-                        entry.delete(0, END)
-                        if not self.ui.map_decimal:
-                            new_value = set_text
-                            new_value_str = '{:05d}'.format(new_value)
-                            entry.insert(END, new_value_str)
-                        else:
-                            new_data = float(round(set_text, self.map_precision))
-                            parts = str(new_data).split('.')
-                            decimal_length = len(parts[1])
-                            str_data = str(new_data)
-                            if decimal_length < self.map_precision:
-                                for x in range(self.map_precision - decimal_length):
-                                    str_data += "0"
-                            parts = str_data.split('.')
-                            entry.insert(0, f"{int(parts[0]):05}.{parts[1]} ")
-                        self.check_difference(event=None, i=i, j=j)
+            selected_items = self.ui.box_layout.selectedItems()
+            if not selected_items:
+                return
+
+            for i in range(len(selected_items)):
+                row = selected_items[i].row()
+                col = selected_items[i].column()
+                entry = self.ui.box_layout.item(row, col)
+                if not self.ui.map_decimal:
+                    new_value = int_value
+                    new_value_str = f"{new_value:05}"
+                    entry.setText(new_value_str)
+                else:
+                    new_data = float(round(int_value, self.map_precision))
+                    parts = str(new_data).split('.')
+                    decimal_length = len(parts[1])
+                    str_data = str(new_data)
+                    if decimal_length < self.map_precision:
+                        for x in range(self.map_precision - decimal_length):
+                            str_data += "0"
+                    parts = str_data.split('.')
+                    entry.setText(f"{int(parts[0]):05}.{parts[1]}")
+                self.check_difference(row, col)
+
         except ValueError:
-            messagebox.showerror("Error", "Please enter a valid number.")
-        self.update_3d_view()
+            QMessageBox.warning(self.ui, "Warning", "Please enter a valid number.")
 
-    def resize_grid(self, new_columns, new_rows):
-        from y_axis_properties_window import y_axis_properties
-        self.y_axis_properties = y_axis_properties(self.ui)
-        from x_axis_properties_window import x_axis_properties
-        self.x_axis_properties = x_axis_properties(self.ui)
-        from map_properties_window import Map_properties
-        self.map_properties = Map_properties(self.ui)
-        if new_rows > len(self.ui.entry_y_widgets):
-            for x in range(len(self.ui.entry_y_widgets), new_rows):
-                entry = Entry(self.ui.y_frame, width=5, font=("Roboto", 10))
-                entry.grid(row=x, column=0)
-                entry.insert(END, "00000")
-                entry.bind('<KeyRelease>', lambda event, i=x: self.check_difference_y(event, i))
-                entry.bind("<FocusOut>", lambda event, i=x: (self.on_focus_out(event, i, 0, "y")))
-                entry.bind("<ButtonPress-1>", lambda event, i=x: self.start_interaction_y(event, i))
-                entry.bind("<B1-Motion>", self.drag_to_select)
-                entry.bind("<ButtonRelease-1>", self.end_interaction)
-                entry.bind("<Control-a>", lambda event, i=x: self.select_all(event, i, 0, "y"))
-                entry.bind("<Tab>", self.clear_highlight_on_tab)
-                entry.bind("<Button-3>", self.y_axis_properties.show_context_menu)
-                self.ui.entry_y_widgets.append(entry)
-                self.ui.original_Y.append("00000")
-        elif new_rows < len(self.ui.entry_y_widgets):
-            for i in range(len(self.ui.entry_y_widgets) - 1, new_rows - 1, -1):
-                entry = self.ui.entry_y_widgets.pop()
-                entry.destroy()
-                self.ui.original_Y.pop()
+    def resize_grid(self, new_columns, new_rows, new):
+        self.ui.num_columns_3d = new_columns
+        self.ui.num_rows_3d = new_rows
 
-        for i in range(new_rows):
-            entry = self.ui.entry_y_widgets[i]
-            entry.grid(row=i, column=0)
+        self.ui.box_layout.setRowCount(self.ui.num_rows_3d)
+        self.ui.box_layout.setColumnCount(self.ui.num_columns_3d)
 
-        if new_columns > len(self.ui.entry_x_widgets[0]):
-            for x in range(len(self.ui.entry_x_widgets[0]), new_columns):
-                entry = Entry(self.ui.x_frame, width=5, font=("Roboto", 10))
-                entry.grid(row=0, column=x)
-                entry.insert(END, "00000")
-                entry.bind('<KeyRelease>', lambda event, j=x: self.check_difference_x(event, j))
-                entry.bind("<FocusOut>", lambda event, j=x: (self.on_focus_out(event, 0, j, "x")))
-                entry.bind("<ButtonPress-1>", lambda event, j=x: self.start_interaction_x(event, j))
-                entry.bind("<B1-Motion>", self.drag_to_select)
-                entry.bind("<ButtonRelease-1>", self.end_interaction)
-                entry.bind("<Control-a>", lambda event, j=x: self.select_all(event, 0, j, "x"))
-                entry.bind("<Tab>", self.clear_highlight_on_tab)
-                entry.bind("<Button-3>", self.x_axis_properties.show_context_menu)
-                self.ui.entry_x_widgets[0].append(entry)
-                self.ui.original_X[0].append("00000")
-        elif new_columns < len(self.ui.entry_x_widgets[0]):
-            for j in range(len(self.ui.entry_x_widgets[0]) - 1, new_columns - 1, -1):
-                entry = self.ui.entry_x_widgets[0].pop()
-                entry.destroy()
-                self.ui.original_X[0].pop()
+        horizontal_headers = [str(i + 1) for i in range(self.ui.num_columns_3d)]
+        vertical_headers = [str(i + 1) for i in range(self.ui.num_rows_3d)]
 
-        if new_rows > len(self.ui.entry_widgets):
-            for x in range(len(self.ui.entry_widgets), new_rows):
+        self.ui.box_layout.setHorizontalHeaderLabels(horizontal_headers)
+        self.ui.box_layout.setVerticalHeaderLabels(vertical_headers)
+
+        for col in range(self.ui.num_columns_3d):
+            header_item = QTableWidgetItem(horizontal_headers[col])
+            self.ui.box_layout.setHorizontalHeaderItem(col, header_item)
+
+        for row in range(self.ui.num_rows_3d):
+            header_item = QTableWidgetItem(vertical_headers[row])
+            self.ui.box_layout.setVerticalHeaderItem(row, header_item)
+
+        if not new:
+            self.ui.original = []
+            self.ui.original_x = []
+            self.ui.original_y = []
+
+            for i in range(self.ui.num_rows_3d):
                 row = []
-                original_row = []
-                for y in range(new_columns):
-                    entry = Entry(self.ui.main_frame, width=5, font=("Roboto", 10))
-                    entry.grid(row=x, column=y)
-                    entry.insert(END, "00000")
-                    entry.bind('<KeyRelease>',
-                               lambda event, i=x, j=y: (
-                               self.check_difference(event, i, j), self.check_difference_3d(i, j)))
-                    entry.bind("<FocusOut>", lambda event, i=x, j=y: (self.on_focus_out(event, i, j, "map")))
-                    entry.bind("<ButtonPress-1>", lambda event, i=x, j=y: (
-                        self.start_interaction(event, i, j), self.check_difference_3d(i, j)))
-                    entry.bind("<B1-Motion>", self.drag_to_select)
-                    entry.bind("<ButtonRelease-1>", self.end_interaction)
-                    entry.bind("<Control-a>", lambda event, i=x, j=y: self.select_all(event, i, j, "map"))
-                    entry.bind("<Tab>", self.clear_highlight_on_tab)
-                    entry.bind("<Button-3>", self.map_properties.show_context_menu)
-                    row.append(entry)
-                    original_row.append("00000")
-                self.ui.entry_widgets.append(row)
-                self.ui.original.append(original_row)
-        elif new_rows < len(self.ui.entry_widgets):
-            for i in range(len(self.ui.entry_widgets) - 1, new_rows - 1, -1):
-                row = self.ui.entry_widgets.pop()
-                for entry in row:
-                    entry.destroy()
-                self.ui.original.pop()
+                self.ui.original_y.append(i + 1)
+                for x in range(self.ui.num_columns_3d):
+                    row.append(0)
+                self.ui.original.append(row)
 
-        for x in range(len(self.ui.entry_widgets)):
-            row = self.ui.entry_widgets[x]
-            original_row = self.ui.original[x]
-            for y in range(len(row), new_columns):
-                entry = Entry(self.ui.main_frame, width=5, font=("Roboto", 10))
-                entry.grid(row=x, column=y)
-                entry.insert(END, "00000")
-                entry.bind('<KeyRelease>',
-                           lambda event, i=x, j=y: (
-                               self.check_difference(event, i, j), self.check_difference_3d(i, j)))
-                entry.bind("<FocusOut>", lambda event, i=x, j=y: (self.on_focus_out(event, i, j, "map")))
-                entry.bind("<ButtonPress-1>", lambda event, i=x, j=y: (
-                    self.start_interaction(event, i, j), self.check_difference_3d(i, j)))
-                entry.bind("<B1-Motion>", self.drag_to_select)
-                entry.bind("<ButtonRelease-1>", self.end_interaction)
-                entry.bind("<Control-a>", lambda event, i=x, j=y: self.select_all(event, i, j, "map"))
-                entry.bind("<Tab>", self.clear_highlight_on_tab)
-                entry.bind("<Button-3>", self.map_properties.show_context_menu)
-                row.append(entry)
-                original_row.append("00000")
-            for j in range(len(row) - 1, new_columns - 1, -1):
-                entry = row.pop()
-                entry.destroy()
-                original_row.pop()
-
-        self.ui.columns_3d = new_columns
-        self.ui.rows_3d = new_rows
-
-    def update_3d_view(self):
-        x = np.arange(self.ui.columns_3d)
-        y = np.arange(self.ui.rows_3d)
-        x, y = np.meshgrid(x, y)
-
-        values = np.array([[float(self.ui.entry_widgets[i][j].get()) for j in range(self.ui.columns_3d)]
-                           for i in range(self.ui.rows_3d)])
-
-        if self.ui.signed_values:
-            for i in range(values.shape[0]):
-                for j in range(values.shape[1]):
-                    if values[i, j] > 55000:
-                        values[i, j] = 0
-
-        self.ui.ax_3d.clear()
-        surf = self.ui.ax_3d.plot_surface(x, y, values, cmap='viridis', edgecolor='none')
-        self.ui.ax_3d.set_xlabel('X')
-        self.ui.ax_3d.set_ylabel('Y')
-        self.ui.ax_3d.set_zlabel('Value')
-
-        if all(entry.get() == "00000" for entry in self.ui.entry_x_widgets[0]) and \
-                all(entry.get() == "00000" for entry in self.ui.entry_y_widgets):
-            self.ui.ax_3d.set_xticks([])
-            self.ui.ax_3d.set_yticks([])
-        else:
-            self.ui.ax_3d.set_xticks(np.arange(0, self.ui.columns_3d, 1))
-            self.ui.ax_3d.set_yticks(np.arange(0, self.ui.rows_3d, 1))
-
-        self.ui.canvas_3d.draw()
+            for i in range(self.ui.num_columns_3d):
+                self.ui.original_x.append(i + 1)
 
     def paste_data(self, maps_sel, data, row, col, new, name):
         if maps_sel:
@@ -370,17 +244,23 @@ class Mode3D:
                 content = file.read().split('\n')
                 for i in range(len(content)):
                     if content[i] == name:
-                     map_factor = float(content[i + 4])
-                     self.map_precision = int(content[i + 5])
-                     break
+                        try:
+                            map_factor = float(content[i + 4])
+                            self.map_precision = int(content[i + 5])
+                            break
+                        except ValueError:
+                            QMessageBox.warning(self.ui, "Warning",
+                                                "There is a problem with the mappack file. It appears to have been modified by an user."
+                                                "\nPlease restart the application!")
+                            return
 
-            self.resize_grid(col, row)
+            self.resize_grid(col, row, new)
             index = 0
             str_data = ""
             self.ui.map_values = []
+
             for i in range(row):
                 for j in range(col):
-                    self.ui.entry_widgets[i][j].delete(0, END)
                     data = list(data)
                     data[index] = int(data[index])
                     if map_factor != 1.0:
@@ -398,74 +278,81 @@ class Mode3D:
                     else:
                         data[index] = int(round(data[index]))
                         map_decimal = False
-                    self.ui.entry_widgets[i][j].delete(0, END)
                     self.ui.map_decimal = map_decimal
                     if not map_decimal:
-                        self.ui.entry_widgets[i][j].insert(0, f"{int(data[index]):05}")
+                        self.ui.box_layout.setItem(i, j, QTableWidgetItem(f"{int(data[index]):05}"))
                         if not new:
                             self.ui.original[i][j] = data[index]
                     else:
                         parts = str_data.split('.')
-                        self.ui.entry_widgets[i][j].insert(0, f"{int(parts[0]):05}.{parts[1]} ")
-                        self.ui.new_width = len(self.ui.entry_widgets[i][j].get()) - 1
-                        self.ui.entry_widgets[i][j].configure(width=self.ui.new_width)
+                        self.ui.box_layout.setItem(i, j, QTableWidgetItem(f"{int(parts[0]):05}.{parts[1]}"))
+                        self.ui.new_width = len(self.ui.box_layout.item(i, j).text()) - 1
                         if not new:
-                            self.ui.original[i][j] = float(self.ui.entry_widgets[i][j].get().strip())
+                            self.ui.original[i][j] = float(self.ui.box_layout.item(i, j).text().strip())
                     index += 1
-                    self.ui.entry_widgets[i][j].configure(fg="black")
-            self.ui.rows_entry.configure(state="normal")
-            self.ui.columns_entry.configure(state="normal")
-            self.ui.rows_entry.delete(0, END)
-            self.ui.rows_entry.insert(0, f"{row:02}")
-            self.ui.columns_entry.delete(0, END)
-            self.ui.columns_entry.insert(0, f"{col:02}")
-            self.ui.rows_entry.configure(state="disabled")
-            self.ui.columns_entry.configure(state="disabled")
+                    self.ui.box_layout.item(i, j).setForeground(QColor("white"))
+
+            self.adjust_row_width()
+
+            self.ui.entry_row_3d.setText(f"{row:02}")
+            self.ui.entry_col_3d.setText(f"{col:02}")
         else:
-            data = self.ui.window.clipboard_get()
-            lines = data.strip().split('\n')
-            num_rows = len(lines)
-            num_columns = max(len(line.strip().split('\t')) for line in lines)
-            try:
-                self.ui.rows_entry.configure(state="normal")
-                self.ui.columns_entry.configure(state="normal")
-                self.ui.rows_entry.delete(0, END)
-                self.ui.rows_entry.insert(0, f"{num_rows:02}")
-                self.ui.columns_entry.delete(0, END)
-                self.ui.columns_entry.insert(0, f"{num_columns:02}")
-                self.ui.rows_entry.configure(state="disabled")
-                self.ui.columns_entry.configure(state="disabled")
+            clipboard = QApplication.clipboard()
+            clipboard_text = clipboard.text()  # get text from clipboard
 
-                self.clear_highlighting()
+            if clipboard_text[-1] == '\n':
+                clipboard_text = clipboard_text[:-1]
 
-                self.resize_grid(num_columns, num_rows)
+            values_clipboard = re.split(r'[\t\n]', clipboard_text)
 
-                for i, line in enumerate(lines):
-                    numbers = line.strip().split('\t')
-                    for j, num in enumerate(numbers):
-                        if i < self.ui.rows_3d and j < self.ui.columns_3d:
-                            new_value = '{:05d}'.format(int(num))
-                            self.ui.entry_widgets[i][j].delete(0, END)
-                            self.ui.entry_widgets[i][j].insert(0, new_value)
-                            if not new:
-                                self.ui.original[i][j] = new_value
-                            self.ui.entry_widgets[i][j].configure(fg="black")
+            length_of_original = (sum(len(sublist) for sublist in self.ui.original))
 
-                last_row_values = [entry.get() for entry in self.ui.entry_widgets[-1]]
-                if not any(last_row_values) and self.ui.rows_3d > 1:
-                    last_row = self.ui.entry_widgets.pop()
-                    for entry in last_row:
-                        entry.destroy()
-                    num_rows -= 1
-                    self.ui.rows_entry.configure(state="normal")
-                    self.ui.rows_entry.delete(0, END)
-                    self.ui.rows_entry.insert(0, f"{num_rows:02}")
-                    self.ui.rows_entry.configure(state="disabled")
+            if len(values_clipboard) != length_of_original:
+                QMessageBox.warning(self.ui, "Warning", "Data size is not right!")
+                return
 
-            except TclError:
-                messagebox.showerror("Error", "Clipboard operation failed. Please try again.")
+            for i in range(len(values_clipboard)):
+                try:
+                    int(values_clipboard[i])
+                except ValueError:
+                    QMessageBox.warning(self.ui, "Warning", "Data is not correct!")
+                    return
 
-        self.update_3d_view()
+            x = 0
+            row_start = 0
+            col_start = 0
+
+            for i in range(len(clipboard_text)):
+                if x >= len(values_clipboard):
+                    break
+
+                if clipboard_text[i] == '\t':
+                    item = self.ui.box_layout.item(row_start, col_start)
+                    if item:
+                        int_val = int(values_clipboard[x])
+                        item.setText(f"{int_val:05}")
+                    x += 1
+
+                    if col_start + 1 >= self.ui.columns:
+                        row_start += 1
+                        col_start = 0
+                    else:
+                        col_start += 1
+
+                elif clipboard_text[i] == '\n':
+                    item = self.ui.box_layout.item(row_start, col_start)
+                    if item:
+                        int_val = int(values_clipboard[x])
+                        item.setText(f"{int_val:05}")
+                    x += 1
+
+                    row_start += 1
+                    col_start = 0
+
+            item = self.ui.box_layout.item(row_start, col_start)
+            if item:
+                int_val = int(values_clipboard[x])
+                item.setText(f"{int_val:05}")
 
     def paste_x_data(self, maps, data, new):
         if maps:
@@ -476,26 +363,33 @@ class Mode3D:
             index = maps.last_map_index
             index *= 10
 
-            x_factor = float(content[index + 6])
-            x_precision = int(content[index + 7])
+            try:
+                x_factor = float(content[index + 6])
+                self.x_precision = int(content[index + 7])
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning",
+                                    "There is a problem with the mappack file. It appears to have been modified by an user."
+                                    "\nPlease restart the application!")
+                return
 
             str_data = ""
 
+            self.ui.x_values = []
+
             for i in range(len(data)):
-                self.ui.entry_x_widgets[0][i].delete(0, END)
                 data = list(data)
                 data[i] = int(data[i])
 
                 if x_factor != 1.0:
                     data[i] *= x_factor
                 self.ui.x_values.append(data[i])
-                if x_precision != 0:
-                    new_data = float(round(data[i], x_precision))
+                if self.x_precision != 0:
+                    new_data = float(round(data[i], self.x_precision))
                     parts = str(new_data).split('.')
                     decimal_length = len(parts[1])
                     str_data = str(new_data)
-                    if decimal_length < x_precision:
-                        for x in range(x_precision - decimal_length):
+                    if decimal_length < self.x_precision:
+                        for x in range(self.x_precision - decimal_length):
                             str_data += "0"
                     x_decimal = True
                 else:
@@ -504,38 +398,43 @@ class Mode3D:
 
                 self.ui.x_axis_decimal = x_decimal
 
-                if self.ui.map_decimal:
-                    self.ui.entry_x_widgets[0][i].configure(width=self.ui.new_width)
-
                 if not x_decimal:
-                    self.ui.entry_x_widgets[0][i].insert(0, f"{int(data[i]):05}")
+                    self.ui.box_layout.horizontalHeaderItem(i).setText(f"{int(data[i]):05}")
                     if not new:
-                        self.ui.original_X[0][i] = data[i]
+                        self.ui.original_x[i] = data[i]
                 else:
                     parts = str_data.split('.')
-                    self.ui.entry_x_widgets[0][i].insert(0, f"{int(parts[0]):05}.{parts[1]}  ")
+                    self.ui.box_layout.horizontalHeaderItem(i).setText(f"{int(parts[0]):05}.{parts[1]}")
+
                     if not new:
-                        self.ui.original_X[0][i] = float(self.ui.entry_x_widgets[0][i].get().strip())
+                        self.ui.original_x[i] = float(self.ui.box_layout.horizontalHeaderItem(i).text().strip())
 
+            self.adjust_row_width()
         else:
-            data = self.ui.window.clipboard_get()
-            try:
-                numbers = data.strip().split('\t')
+            clipboard = QApplication.clipboard()
+            clipboard_text = clipboard.text()  # get text from clipboard
 
-                self.clear_highlighting()
+            if clipboard_text[-1] == '\n':
+                clipboard_text = clipboard_text[:-1]
 
-                for j, num in enumerate(numbers):
-                    if j < self.ui.columns_3d:
-                        new_value = '{:05d}'.format(int(num))
-                        self.ui.entry_x_widgets[0][j].delete(0, END)
-                        self.ui.entry_x_widgets[0][j].insert(0, new_value)
-                        if not new:
-                            self.ui.original_X[0][j] = new_value
+            values_clipboard = clipboard_text.split('\t')
 
-            except TclError:
-                messagebox.showerror("Error", "Clipboard operation failed. Please try again.")
+            if len(values_clipboard) != self.ui.num_columns_3d:
+                QMessageBox.warning(self.ui, "Warning", "Data size is not right!")
+                return
 
-            self.update_3d_view()
+            for i in range(len(values_clipboard)):
+                try:
+                    int(values_clipboard[i])
+                except ValueError:
+                    QMessageBox.warning(self.ui, "Warning", "Data is not correct!")
+                    return
+
+            for i in range(len(values_clipboard)):
+                item = self.ui.box_layout.horizontalHeaderItem(i)
+                int_val = int(values_clipboard[i])
+                item.setText(f"{int_val:05}")
+                self.check_difference_x(i)
 
     def paste_y_data(self, maps, data, new):
         if maps:
@@ -546,26 +445,33 @@ class Mode3D:
             index = maps.last_map_index
             index *= 10
 
-            y_factor = float(content[index + 8])
-            y_precision = int(content[index + 9])
+            try:
+                y_factor = float(content[index + 8])
+                self.y_precision = int(content[index + 9])
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning",
+                                    "There is a problem with the mappack file. It appears to have been modified by an user."
+                                    "\nPlease restart the application!")
+                return
 
             str_data = ""
+
+            self.ui.y_values = []
 
             for i in range(len(data)):
                 data = list(data)
                 data[i] = int(data[i])
-                self.ui.entry_y_widgets[i].delete(0, END)
 
                 if y_factor != 1.0:
-                    data[i] *= y_precision
+                    data[i] *= y_factor
                 self.ui.y_values.append(data[i])
-                if y_precision != 0.0:
-                    new_data = float(round(data[i], y_precision))
+                if self.y_precision != 0.0:
+                    new_data = float(round(data[i], self.y_precision))
                     parts = str(new_data).split('.')
                     decimal_length = len(parts[1])
                     str_data = str(new_data)
-                    if decimal_length < y_precision:
-                        for x in range(y_precision - decimal_length):
+                    if decimal_length < self.y_precision:
+                        for x in range(self.y_precision - decimal_length):
                             str_data += "0"
                     y_decimal = True
                 else:
@@ -573,315 +479,494 @@ class Mode3D:
                     y_decimal = False
                 self.ui.y_axis_decimal = y_decimal
                 if not y_decimal:
-                    self.ui.entry_y_widgets[i].insert(0, f"{int(data[i]):05}")
+                    self.ui.box_layout.verticalHeaderItem(i).setText(f"{int(data[i]):05}")
                     if not new:
-                        self.ui.original_Y[i] = data[i]
+                        self.ui.original_y[i] = data[i]
                 else:
                     parts = str_data.split('.')
-                    self.ui.entry_y_widgets[i].insert(0, f"{int(parts[0]):05}.{parts[1]}  ")
-                if self.ui.map_decimal:
-                    self.ui.entry_y_widgets[i].configure(width=self.ui.new_width)
-                    if not new:
-                        self.ui.original_X[0][i] = float(self.ui.entry_x_widgets[0][i].get().strip())
-        else:
-            data = self.ui.window.clipboard_get()
-            try:
-                numbers = re.split(r'\s+', data.strip())
+                    self.ui.box_layout.verticalHeaderItem(i).setText(f"{int(parts[0]):05}.{parts[1]}")
 
-                self.clear_highlighting()
+                if not new:
+                    self.ui.original_y[i] = float(self.ui.box_layout.verticalHeaderItem(i).text().strip())
 
-                for i, num in enumerate(numbers):
-                    if i < len(self.ui.entry_y_widgets):
-                        try:
-                            new_value = '{:05d}'.format(int(num))
-                            self.ui.entry_y_widgets[i].delete(0, END)
-                            self.ui.entry_y_widgets[i].insert(0, new_value)
-                            if i < len(self.ui.original_Y):
-                                if not new:
-                                    self.ui.original_Y[i] = new_value
-                        except ValueError:
-                            messagebox.showerror("Error", f"Invalid value '{num}' found in clipboard data.")
-                            continue
+            add_width_y = 0
+            if self.ui.y_axis_decimal:
+                for y in range(self.y_precision):
+                    if y > 0:
+                        add_width_y += 10
                     else:
-                        messagebox.showwarning("Warning", "More data in clipboard than available entry widgets.")
+                        add_width_y += 12
+            self.ui.box_layout.verticalHeader().setFixedWidth(55 + add_width_y)
+        else:
+            clipboard = QApplication.clipboard()
+            clipboard_text = clipboard.text()  # get text from clipboard
 
+            if clipboard_text[-1] == '\n':
+                clipboard_text = clipboard_text[:-1]
 
-            except TclError:
-                messagebox.showerror("Error", "Clipboard operation failed. Please try again.")
+            values_clipboard = clipboard_text.split('\n')
 
-        self.update_3d_view()
+            if len(values_clipboard) != self.ui.num_rows_3d:
+                QMessageBox.warning(self.ui, "Warning", "Data size is not right!")
+                return
 
-    def clear_highlighting(self):
-        for i in range(self.ui.rows_3d):
-            for j in range(self.ui.columns_3d):
-                entry = self.ui.entry_widgets[i][j]
-                entry.configure(bg="white")
-                self.ui.window.update_idletasks()
+            for i in range(len(values_clipboard)):
+                try:
+                    int(values_clipboard[i])
+                except ValueError:
+                    QMessageBox.warning(self.ui, "Warning", "Data is not correct!")
+                    return
 
-    def check_difference(self, event, i, j):
-        entry = self.ui.entry_widgets[i][j]
-        original_value = float(self.ui.original[i][j])
+            for i in range(len(values_clipboard)):
+                item = self.ui.box_layout.verticalHeaderItem(i)
+                int_val = int(values_clipboard[i])
+                item.setText(f"{int_val:05}")
+                self.check_difference_y(i)
 
-        if len(entry.get()) > 5 and not self.ui.map_decimal:
-            entry.configure(width = 5)
-            current_index = entry.index(INSERT)
-            entry.delete(current_index - 1, current_index)
+    def adjust_row_width(self):
+        add_width_map = 0
+        if self.ui.map_decimal:
+            for i in range(self.map_precision):
+                if i > 0:
+                    add_width_map += 10
+                else:
+                    add_width_map += 12
+
+        add_width_x = 0
+        if self.ui.x_axis_decimal:
+            for i in range(self.x_precision):
+                if i > 0:
+                    add_width_x += 10
+                else:
+                    add_width_x += 12
+
+        if add_width_x > add_width_map:
+            add_width = add_width_x
+        elif add_width_x < add_width_map:
+            add_width = add_width_map
+        else:
+            add_width = add_width_map
+
+        for col in range(self.ui.num_columns_3d):  # change column width
+            self.ui.box_layout.setColumnWidth(col, self.ui.column_width_3d + add_width)
+
+    def check_difference(self, row, col):
+        entry = self.ui.box_layout.item(row, col)
+        original_value = float(self.ui.original[row][col])
+
+        if len(entry.text()) > 5 and not self.ui.map_decimal:
+            current_text = entry.text()
+
+            int_part, decimal_part = current_text.split('.')
+
+            cut_counter = len(decimal_part) + 1
+
+            entry.setText(current_text[:cut_counter * -1])
 
         try:
-            current_value = float(entry.get())
+            current_value = float(entry.text())
             if current_value > 65535 or current_value < 0:
                 raise ValueError
         except ValueError:
-            current_index = entry.index(INSERT)
-            entry.delete(current_index - 1, current_index)
+            current_text = entry.text()
+            int_part, decimal_part = current_text.split('.')
+
+            cut_counter = len(decimal_part) + 1
+
+            entry.setText(current_text[:cut_counter * -1])
             return
 
         if current_value > original_value:
-            entry.configure(fg="red")
+            entry.setForeground(QColor("red"))
         elif current_value < original_value:
-            entry.configure(fg="blue")
+            entry.setForeground(QColor("blue"))
         else:
-            entry.configure(fg="black")
+            entry.setForeground(QColor("white"))
 
-        self.update_3d_view()
+        self.on_selection_3d()
 
-    def check_difference_x(self, event, j):
-        entry = self.ui.entry_x_widgets[0][j]
-        original_value = float(self.ui.original_X[0][j])
+    def check_difference_x(self, j):
+        entry = self.ui.box_layout.horizontalHeaderItem(j)
+        original_value = float(self.ui.original_x[j])
 
-        if len(entry.get()) > 5 and not self.ui.x_axis_decimal:
-            current_index = entry.index(INSERT)
-            entry.delete(current_index - 1, current_index)
+        if len(entry.text()) > 5 and not self.ui.x_axis_decimal:
+            current_text = entry.text()
+            entry.setText(current_text[:-1])
 
         try:
-            current_value = float(entry.get())
+            current_value = float(entry.text())
             if current_value > 65535 or current_value < 0:
                 raise ValueError
         except ValueError:
-            current_index = entry.index(INSERT)
-            entry.delete(current_index - 1, current_index)
+            current_text = entry.text()
+            entry.setText(current_text[:-1])
             return
 
         if current_value > original_value:
-            entry.configure(fg="red")
+            entry.setForeground(QColor("red"))
         elif current_value < original_value:
-            entry.configure(fg="blue")
+            entry.setForeground(QColor("blue"))
         else:
-            entry.configure(fg="black")
+            entry.setForeground(QColor("white"))
 
-        self.update_3d_view()
+    def check_difference_y(self, i):
+        entry = self.ui.box_layout.verticalHeaderItem(i)
+        original_value = float(self.ui.original_y[i])
 
-    def check_difference_y(self, event, i):
-        entry = self.ui.entry_y_widgets[i]
-        original_value = float(self.ui.original_Y[i])
-
-        if len(entry.get()) > 5 and not self.ui.y_axis_decimal:
-            current_index = entry.index(INSERT)
-            entry.delete(current_index - 1, current_index)
+        if len(entry.text()) > 5 and not self.ui.y_axis_decimal:
+            current_text = entry.text()
+            entry.setText(current_text[:-1])
 
         try:
-            current_value = float(entry.get())
+            current_value = float(entry.text())
             if current_value > 65535 or current_value < 0:
                 raise ValueError
         except ValueError:
-            current_index = entry.index(INSERT)
-            entry.delete(current_index - 1, current_index)
+            current_text = entry.text()
+            entry.setText(current_text[:-1])
             return
 
         if current_value > original_value:
-            entry.configure(fg="red")
+            entry.setForeground(QColor("red"))
         elif current_value < original_value:
-            entry.configure(fg="blue")
+            entry.setForeground(QColor("blue"))
         else:
-            entry.configure(fg="black")
-
-        self.update_3d_view()
+            entry.setForeground(QColor("white"))
 
     def copy_map_values(self):
         map_values = ""
-        for i in range(self.ui.rows_3d):
-            for j in range(self.ui.columns_3d):
-                map_values += self.ui.entry_widgets[i][j].get() + "\t"
-            map_values += "\n"
-        self.ui.window.clipboard_clear()
-        self.ui.window.clipboard_append(map_values)
+        clipboard = QApplication.clipboard()
+        clipboard.clear()
+
+        for i in range(self.ui.box_layout.rowCount()):
+            row_values = []
+            for j in range(self.ui.box_layout.columnCount()):
+                entry = self.ui.box_layout.item(i, j)
+                row_values.append(entry.text())
+
+            map_values += "\t".join(row_values)
+            if i < self.ui.box_layout.rowCount() - 1:
+                map_values += "\n"
+
+        clipboard.setText(map_values)
+
 
     def copy_x_axis(self):
-        x_axis_values = "\t".join(entry.get() for entry in self.ui.entry_x_widgets[0])
-        self.ui.window.clipboard_clear()
-        self.ui.window.clipboard_append(x_axis_values)
+        clipboard = QApplication.clipboard()
+        clipboard.clear()
+
+        values_data = []
+        for col in range(self.ui.num_columns_3d):
+            value = self.ui.box_layout.horizontalHeaderItem(col).text()
+            values_data.append(value)
+
+        x_axis_values = "\t".join(values_data)
+
+        clipboard.setText(x_axis_values)
+
 
     def copy_y_axis(self):
-        y_axis_values = "\n".join(entry.get() for entry in self.ui.entry_y_widgets)
-        self.ui.window.clipboard_clear()
-        self.ui.window.clipboard_append(y_axis_values)
+        clipboard = QApplication.clipboard()
+        clipboard.clear()
+
+        values_data = []
+        for row in range(self.ui.num_rows_3d):
+            value = self.ui.box_layout.verticalHeaderItem(row).text()
+            values_data.append(value)
+
+        y_axis_values = "\n".join(values_data)
+
+        clipboard.setText(y_axis_values)
 
     def check_all(self):
-        rows = self.ui.rows_3d
-        cols = self.ui.columns_3d
+        rows = self.ui.num_rows_3d
+        cols = self.ui.num_columns_3d
 
         for row in range(rows):
             for col in range(cols):
-                self.check_difference(None, row, col)
+                self.check_difference(row, col)
 
-            self.check_difference_y(None, row)
+            self.check_difference_y(row)
 
         for col in range(cols):
-            self.check_difference_x(None, col)
+            self.check_difference_x(col)
 
-    def on_focus_out(self, event, row, col, mode):
-        if mode == "map":
-            entry = self.ui.entry_widgets[row][col]
-            if len(entry.get()) == 0 and not self.ui.map_decimal:
-                entry.insert(END, f"{self.ui.original[row][col]:05}")
-            elif len(entry.get()) == 0 and self.ui.map_decimal:
-                parts = str(self.ui.original[row][col]).split('.')
-                entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
+    def validate_cell_input(self, item: QTableWidgetItem):
+        self.ui.box_layout.blockSignals(True) # block all signals
+
+        row = item.row()
+        col = item.column()
+        value = item.text()
+
+        try:
+            float_value = float(value)
+            if float_value < 0 or float_value > 65535:
+                raise ValueError
+
+            if '.' in value:
+                int_part, dec_part = value.split('.')
+
+                formatted_int = int_part.zfill(5)
+
+                formatted_number = f"{formatted_int}.{dec_part}"
+                item.setText(formatted_number)
             else:
-                if not self.ui.map_decimal:
-                    try:
-                        value = int(entry.get())
-                    except ValueError:
-                        entry.delete(0, END)
-                        entry.insert(END, f"{self.ui.original[row][col]:05}")
-                        return
-                    entry.delete(0, END)
-                    entry.insert(END, f"{value:05}")
+                if self.ui.map_decimal:
+                    map_name = self.ui.map_list.item(self.ui.maps.last_map_index).text()
+                    with open(self.ui.maps.file_path, 'r') as file:
+                        content = file.read().split('\n')
+                        for i in range(len(content)):
+                            if content[i] == map_name:
+                                try:
+                                    precision = int(content[i + 5])
+                                except ValueError:
+                                    QMessageBox.warning(self.ui, "Warning",
+                                                        "There is a problem with the mappack file. It appears to have been modified by an user."
+                                                        "\nPlease restart the application!")
+                                    return
+                    item.setText(f"{int(float_value):05}.{'0' * precision}")
                 else:
-                    parts = entry.get().split('.')
-                    entry.delete(0, END)
-                    entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
-                self.check_difference(None, row, col)
-            if entry.selection_present():
-                entry.selection_clear()
-        if mode == "x":
-            entry = self.ui.entry_x_widgets[row][col]
-            if len(entry.get()) == 0 and not self.ui.x_axis_decimal:
-                entry.insert(END, f"{self.ui.original_X[row][col]:05}")
-            elif len(entry.get()) == 0 and self.ui.x_axis_decimal:
-                parts = str(self.ui.original_X[row][col]).split('.')
-                entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
+                    item.setText(f"{int(float_value):05}")
+
+        except ValueError:
+            value_ori = float(self.ui.original[row][col])
+            if '.' in value:
+                integer_part, decimal_part = str(value_ori).split('.')
+
+                formatted_integer = integer_part.zfill(5)
+
+                formatted_number = f"{formatted_integer}.{decimal_part}"
+                item.setText(formatted_number)
             else:
-                if not self.ui.x_axis_decimal:
-                    try:
-                        value = int(entry.get())
-                    except ValueError:
-                        entry.delete(0, END)
-                        entry.insert(END, f"{self.ui.original_X[row][col]:05}")
-                    entry.delete(0, END)
-                    entry.insert(END, f"{value:05}")
+                if self.ui.map_decimal:
+                    map_name = self.ui.map_list.item(self.ui.maps.last_map_index).text()
+                    with open(self.ui.maps.file_path, 'r') as file:
+                        content = file.read().split('\n')
+                        for i in range(len(content)):
+                            if content[i] == map_name:
+                                try:
+                                    precision = int(content[i + 5])
+                                except ValueError:
+                                    QMessageBox.warning(self.ui, "Warning",
+                                                        "There is a problem with the mappack file. It appears to have been modified by an user."
+                                                        "\nPlease restart the application!")
+                                    return
+                    item.setText(f"{value_ori:05}.{'0' * precision}")
                 else:
-                    parts = entry.get().split('.')
-                    entry.delete(0, END)
-                    entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
-                self.check_difference_x(None, col)
-            if entry.selection_present():
-                entry.selection_clear()
-        if mode == "y":
-            entry = self.ui.entry_y_widgets[row]
-            if len(entry.get()) == 0 and self.ui.y_axis_decimal:
-                entry.insert(END, f"{self.ui.original_Y[row]:05}")
-            elif len(entry.get()) == 0 and self.ui.y_axis_decimal:
-                parts = str(self.ui.original_Y[row][col]).split('.')
-                entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
-            else:
-                if not self.ui.y_axis_decimal:
-                    try:
-                        value = int(entry.get())
-                    except ValueError:
-                        entry.delete(0, END)
-                        entry.insert(END, f"{self.ui.original_Y[row]:05}")
-                    entry.delete(0, END)
-                    entry.insert(END, f"{value:05}")
-                else:
-                    parts = entry.get().split('.')
-                    entry.delete(0, END)
-                    entry.insert(END, f"{int(parts[0]):05}.{parts[1]}")
-                self.check_difference_y(None, row)
-            if entry.selection_present():
-                entry.selection_clear()
+                    item.setText(f"{int(value_ori):05}")
 
-    def select_all(self, event, row, col, mode):
-        if mode in ("map", "x", "y"):
-            if mode == "map":
-                entry = self.ui.entry_widgets[row][col]
-            elif mode == "x":
-                entry = self.ui.entry_x_widgets[row][col]
-            else:
-                entry = self.ui.entry_y_widgets[row]
+        self.check_difference(row, col)
 
-            entry.select_range(0, END)
-            entry.icursor(END)
-        return "break"
+        self.ui.tk_win_manager.call_update_3d()
 
-    def clear_highlight_on_tab(self, event):
-        self.clear_highlighting()
+        self.ui.box_layout.blockSignals(False)  # unblock all signals
 
-    def set_default(self):
-        self.resize_grid(10, 10)
-        for row in range(self.ui.rows_3d):
-            for col in range(self.ui.columns_3d):
-                entry = self.ui.entry_widgets[row][col]
-                entry.delete(0, END)
-                entry.insert(END, "00000")
-                self.ui.original[row][col] = 0
+    def set_default(self): # sets 3d tab at default values
+        self.resize_grid(10, 10, False)
 
-        for col in range(self.ui.columns_3d):
-            entry = self.ui.entry_x_widgets[0][col]
-            entry.delete(0, END)
-            entry.insert(END, "00000")
-            self.ui.original_X[0][col] = 0
+        self.ui.box_layout.setUpdatesEnabled(False)  # Stop redrawing during fill
+        for row in range(self.ui.box_layout.rowCount()): # insert 0
+            for col in range(self.ui.box_layout.columnCount()):
+                self.ui.box_layout.setItem(row, col, QTableWidgetItem(f"{0:05}"))
+        self.ui.box_layout.setUpdatesEnabled(True)  # Re-enable drawing
 
-        for row in range(self.ui.rows_3d):
-            entry = self.ui.entry_y_widgets[row]
-            entry.delete(0, END)
-            entry.insert(END, "00000")
-            self.ui.original_Y[row] = 0
+        # insert both axis
+        horizontal_headers = [f"{i + 1:05}" for i in range(self.ui.num_columns_3d)]
+        vertical_headers = [f"{i + 1:05}" for i in range(self.ui.num_rows_3d)]
 
-        self.ui.columns_entry.configure(state="normal")
-        self.ui.rows_entry.configure(state="normal")
+        self.ui.box_layout.setHorizontalHeaderLabels(horizontal_headers)
+        self.ui.box_layout.setVerticalHeaderLabels(vertical_headers)
 
-        self.ui.rows_entry.delete(0, END)
-        self.ui.columns_entry.delete(0, END)
-        self.ui.rows_entry.insert(END, str(self.ui.rows_3d))
-        self.ui.columns_entry.insert(END, str(self.ui.columns_3d))
+        for col in range(self.ui.num_columns_3d):
+            header_item = QTableWidgetItem(horizontal_headers[col])
+            self.ui.box_layout.setHorizontalHeaderItem(col, header_item)
 
-        self.ui.columns_entry.configure(state="disabled")
-        self.ui.rows_entry.configure(state="disabled")
+        for row in range(self.ui.num_rows_3d):
+            header_item = QTableWidgetItem(vertical_headers[row])
+            self.ui.box_layout.setVerticalHeaderItem(row, header_item)
 
-        self.update_3d_view()
+        for col in range(self.ui.num_columns_3d): # change column width
+            self.ui.box_layout.setColumnWidth(col, self.ui.column_width_3d)
+
+        # set rows and columns entry boxes
+        self.ui.entry_row_3d.setText(f"{self.ui.num_rows_3d:02}")
+        self.ui.entry_col_3d.setText(f"{self.ui.num_columns_3d:02}")
+
+        self.ui.map_opened = False
 
     def paste_selected(self):
-        selected_counter = 0
-        start_row, start_col = None, None
+        selected_items = self.ui.box_layout.selectedItems()
 
-        for row in range(self.ui.rows_3d):
-            for col in range(self.ui.columns_3d):
-                entry = self.ui.entry_widgets[row][col]
-                if entry.cget("bg") == "lightblue":
-                    selected_counter += 1
-                    if start_row is None and start_col is None:
-                        start_row, start_col = row, col
-
-        if selected_counter != 1:
-            messagebox.showerror("Error", "Please select one value where pasting should start from!")
+        if not selected_items:
+            QMessageBox.warning(self.ui, "Warning", "No item selected!")
             return
 
-        data = self.ui.window.clipboard_get()
-        lines = data.strip().split('\n')
-        num_rows = len(lines)
-        num_columns = max(len(line.strip().split('\t')) for line in lines)
+        first_item = selected_items[0]  # first selected item
+        row_ori = first_item.row()  # current row
+        col_ori = first_item.column()  # current column
 
-        if (start_row + num_rows > self.ui.rows_3d) or (start_col + num_columns > self.ui.columns_3d):
-            messagebox.showerror("Error", "Not enough space to paste the values!")
+        clipboard = QApplication.clipboard()
+        clipboard_text = clipboard.text()  # get text from clipboard
+
+        if clipboard_text[-1] == '\n':
+            clipboard_text = clipboard_text[:-1]
+
+        values_clipboard = re.split(r'[\t\n]', clipboard_text)
+
+        index = (row_ori * self.ui.num_columns_3d) + col_ori
+
+        length_of_original = (sum(len(sublist) for sublist in self.ui.original))
+
+        end_length = len(values_clipboard) + index
+
+        if length_of_original < end_length:
+            QMessageBox.warning(self.ui, "Warning", "Data size is not right!")
             return
 
-        for i, line in enumerate(lines):
-            numbers = line.strip().split('\t')
-            for j, num in enumerate(numbers):
-                if i < self.ui.rows_3d and j < self.ui.columns_3d:
-                    new_value = '{:05d}'.format(int(num))
-                    self.ui.entry_widgets[start_row + i][start_col + j].delete(0, END)
-                    self.ui.entry_widgets[start_row + i][start_col + j].insert(0, new_value)
-                    self.ui.entry_widgets[start_row + i][start_col + j].configure(fg="black")
-                    self.check_difference(None, start_row + i, start_col + j)
+        for i in range(len(values_clipboard)):
+            try:
+                int(values_clipboard[i])
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning", "Data is not correct!")
+                return
+
+        x = 0
+        row_start = row_ori
+        col_start = col_ori
+
+        for i in range(len(clipboard_text)):
+            if x >= len(values_clipboard):
+                break
+
+            if clipboard_text[i] == '\t':
+                item = self.ui.box_layout.item(row_start, col_start)
+                if item:
+                    int_val = int(values_clipboard[x])
+                    item.setText(f"{int_val:05}")
+                x += 1
+
+                if col_start + 1 >= self.ui.columns:
+                    row_start += 1
+                    col_start = 0
+                else:
+                    col_start += 1
+
+            elif clipboard_text[i] == '\n':
+                item = self.ui.box_layout.item(row_start, col_start)
+                if item:
+                    int_val = int(values_clipboard[x])
+                    item.setText(f"{int_val:05}")
+                x += 1
+
+                row_start += 1
+                col_start = col_ori
+
+        item = self.ui.box_layout.item(row_start, col_start)
+        if item:
+            int_val = int(values_clipboard[x])
+            item.setText(f"{int_val:05}")
+
+    def on_selection_3d(self):
+        selected_items = self.ui.box_layout.selectedItems()
+
+        if len(selected_items) == 1:
+            selected_index = selected_items[0]
+            row = selected_index.row()
+            col = selected_index.column()
+            if not self.ui.map_decimal:
+                if len(self.ui.box_layout.item(row, col).text()) > 5:
+                    diff_value = int(float(self.ui.box_layout.item(row, col).text()) - float(self.ui.original[row][col]))
+                else:
+                    diff_value = int(self.ui.box_layout.item(row, col).text()) - int(self.ui.original[row][col])
+            else:
+                diff_value = float(self.ui.box_layout.item(row, col).text()) - float(self.ui.original[row][col])
+
+            if diff_value != 0:
+                if not self.ui.map_decimal:
+                    self.ui.diff_btn_3d.setText(f"Diff: {diff_value:05}")
+                else:
+                    parts = str(diff_value).split('.')
+                    self.ui.diff_btn_3d.setText(f"{int(parts[0]):05}.{parts[1]}")
+
+            else:
+                self.ui.diff_btn_3d.setText("Diff: 00000")
+        else:
+            self.ui.diff_btn_3d.setText("Diff: 00000")
+
+    def edit_horizontal_header(self, index):
+        current_text = self.ui.box_layout.horizontalHeaderItem(index).text()
+        value, ok = QInputDialog.getText(self.ui, "Edit X-Axis", "Enter a new value:", text=current_text)
+        try:
+            float_value = float(value)
+            if float_value < 0 or float_value > 65535:
+                raise ValueError
+
+            if '.' in value:
+                int_part, dec_part = value.split('.')
+
+                formatted_int = int_part.zfill(5)
+
+                value = f"{formatted_int}.{dec_part}"
+            else:
+                if self.ui.x_axis_decimal:
+                    map_name = self.ui.map_list.item(self.ui.maps.last_map_index).text()
+                    with open(self.ui.maps.file_path, 'r') as file:
+                        content = file.read().split('\n')
+                        for i in range(len(content)):
+                            if content[i] == map_name:
+                                try:
+                                    precision = int(content[i + 7])
+                                except ValueError:
+                                    QMessageBox.warning(self.ui, "Warning",
+                                                        "There is a problem with the mappack file. It appears to have been modified by an user."
+                                                        "\nPlease restart the application!")
+                                    return
+                    value = f"{int(float_value):05}.{'0' * precision}"
+                else:
+                    value = f"{int(float_value):05}"
+
+        except ValueError:
+            QMessageBox.warning(self.ui, "Warning", "Enter a valid value!")
+            return
+        if ok and value:
+            self.ui.box_layout.horizontalHeaderItem(index).setText(value)
+            self.check_difference_x(index)
+
+    def edit_vertical_header(self, index):
+        current_text = self.ui.box_layout.verticalHeaderItem(index).text()
+        value, ok = QInputDialog.getText(self.ui, "Edit Y-Axis", "Enter a new value:", text=current_text)
+        try:
+            float_value = float(value)
+            if float_value < 0 or float_value > 65535:
+                raise ValueError
+
+            if '.' in value:
+                int_part, dec_part = value.split('.')
+
+                formatted_int = int_part.zfill(5)
+
+                value = f"{formatted_int}.{dec_part}"
+            else:
+                if self.ui.x_axis_decimal:
+                    map_name = self.ui.map_list.item(self.ui.maps.last_map_index).text()
+                    with open(self.ui.maps.file_path, 'r') as file:
+                        content = file.read().split('\n')
+                        for i in range(len(content)):
+                            if content[i] == map_name:
+                                try:
+                                    precision = int(content[i + 9])
+                                except ValueError:
+                                    QMessageBox.warning(self.ui, "Warning",
+                                                        "There is a problem with the mappack file. It appears to have been modified by an user."
+                                                        "\nPlease restart the application!")
+                                    return
+                    value = f"{int(float_value):05}.{'0' * precision}"
+                else:
+                    value = f"{int(float_value):05}"
+
+        except ValueError:
+            QMessageBox.warning(self.ui, "Warning", "Enter a valid value!")
+            return
+        if ok and value:
+            self.ui.box_layout.verticalHeaderItem(index).setText(value)
+            self.check_difference_y(index)

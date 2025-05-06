@@ -1,236 +1,640 @@
+from PyQt6.QtWidgets import QMessageBox, QApplication, QTableView, QFileDialog
+from PyQt6.QtCore import Qt
 import time
-import tkinter
-from tkinter import *
-from tkinter import messagebox
-import math
-import os
+import struct
 
 class TextAddons:
     def __init__(self, ui):
         self.ui = ui
-        self.entry_widget = Entry()
+        self.time_col = 0
+        self.time_shift = 0
 
-    def edit_mode(self, event):
-        self.ui.edit_mode_active = True
-        if self.ui.text_widget.tag_ranges(SEL):
-            sel_start = self.ui.text_widget.index(SEL_FIRST)
-            sel_end = self.ui.text_widget.index(SEL_LAST)
-            selected_text = self.ui.text_widget.get(sel_start, sel_end).strip()
+    def revert_value(self, row, col):
+        new = self.ui.unpacked[(row * self.ui.columns) + col]
+        QMessageBox.warning(self.ui, "Invalid Number!", "You have entered an invalid number!")
+        return new
 
-            if len(selected_text) == 5:
-                place_info = self.ui.text_widget.bbox(SEL_FIRST)
-                x, y, width, height = place_info
-                x_root = x
-                y_root = y
-                self.create_entry(sel_start, sel_end, selected_text, x_root, y_root)
-
-        return "break"
-
-    def create_entry(self, start_index, end_index, text, x_root, y_root):
-        if self.entry_widget:
-            self.entry_widget.destroy()
-
-        self.entry_widget = Entry(self.ui.window, bg="#555", fg="white", highlightthickness=0, bd=0, font=("Courier New", 9))
-        self.entry_widget.insert(0, text)
-        self.entry_widget.place(x=x_root + 14, y=y_root + 42, width=40, height=13)
-
-        self.entry_widget.focus_set()
-        self.entry_widget.bind("<Return>", lambda e: self.save_edit(e, start_index, end_index))
-        self.ui.window.bind("<Button-1>", lambda event: self.on_outside_click(event, self.entry_widget, start_index, end_index))
-
-    def on_outside_click(self, event, widget, func2, func3):
-        if self.ui.edit_mode_active:
-            if widget is not None:
-                if widget.winfo_exists():
-                    try:
-                        x1, y1, x2, y2 = widget.bbox("all")
-                        if not (x1 <= event.x <= x2 and y1 <= event.y <= y2):
-                            self.save_edit(event, func2, func3)
-                    except tkinter.TclError:
-                        return
-
-    def save_edit(self, event, start_index=None, end_index=None):
-        if self.entry_widget:
-            new_text = self.entry_widget.get().strip()
-            try:
-                val = int(new_text)
-                if not (0 <= val <= 65535):
-                    raise ValueError
-            except ValueError:
-                self.entry_widget.destroy()
-                self.ui.text_widget.tag_remove(SEL, 1.0, END)
-                messagebox.showerror("Invalid Number!", "You have entered an invalid number!")
-                return
-            if len(new_text) <= 5:
-                new_text = f"{int(new_text):05}"
-                self.ui.text_widget.delete(start_index, end_index)
-                self.ui.text_widget.insert(start_index, new_text)
-
-                from maps import Maps_Utility
-                maps = Maps_Utility(self.ui)
-                maps.reapply_highlight_text()
-
-            self.entry_widget.destroy()
-            self.entry_widget = None
-            from Utilities import Utility
-            self.utility = Utility(self)
-            self.utility.check_value_changes(self.ui)
-            self.ui.edit_mode_active = False
-
-    def start_selection(self, event):
-        self.selection_start = self.ui.text_widget.index(f"@{event.x},{event.y}")
-
-    def stop_drag(self, event):
-        end_str = str(self.ui.text_widget.index(f"@{event.x},{event.y}"))
-        start_str = str(self.selection_start)
-        end = int(end_str.split('.')[1])
-        self.end_row = int(end_str.split('.')[0])
-        self.start_row = int(start_str.split('.')[0])
-        start = int(start_str.split('.')[1])
-
-        end_temp = end / 6
-        start_temp = start / 6
-
-        temp1 = math.ceil(end_temp)
-        temp2 = math.floor(start_temp)
-
-        self.end = (temp1 * 6) - 1
-        self.start = (temp2 * 6)
-
-        self.on_enter()
-        self.adjust_selection()
-
-    def adjust_selection(self):
-        try:
-            sel_start = self.ui.text_widget.index(SEL_FIRST)
-            sel_end = self.ui.text_widget.index(SEL_LAST)
-            selected_text = self.ui.text_widget.get(sel_start, sel_end)
-        except tkinter.TclError:
-            return
-
-        row, col = sel_end.split('.')
-        col = int(col)
-
-        if selected_text.endswith(' '):
-            col -= 1
-
-        self.ui.text_widget.mark_set(INSERT, f"{row}.{col}")
-
-        self.ui.text_widget.tag_remove(SEL, "1.0", END)
-        self.ui.text_widget.tag_add(SEL, f"{sel_start}", f"{row}.{col}")
-
-        if len(selected_text.strip()) == 5:
-            text = str(sel_start)
-            parts = text.split('.')
-            row = int(parts[0]) - 1
-            col = int(parts[1]) // 6
-
-            index = row * self.ui.columns + col
-
-            self.ui.ori_value_label.configure(text=f"Ori: {self.ui.unpacked[index - self.ui.shift_count]:05}")
+    def highlight_difference(self, new_value, row, col):
+        index = (row * self.ui.columns) + col
+        if len(self.ui.unpacked) - 1 <= index:
+            return "default"
+        ori_value = self.ui.unpacked[index - self.ui.shift_count]
+        if new_value is None:
+            return None
+        if new_value > ori_value:
+            return "red"
+        elif new_value < ori_value:
+            return "blue"
         else:
-            self.ui.ori_value_label.configure(text="Ori: 00000")
+            return "default"
 
-    def on_enter(self):
-        self.ui.text_widget.tag_remove(SEL, "1.0", END)
-        self.ui.text_widget.tag_add(SEL, f"{self.start_row}.{self.start}", f"{self.end_row}.{self.end}")
+    def on_selection(self):
+        self.update_selected_count()
+        self.update_ori_label()
 
-    def disable_double_click_selection(self, event):
-        return 'break'
+    def update_selected_count(self):
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes_count = len(selection_model.selectedIndexes())
 
-    def disable_user_input(self, event):
-        if (event.keysym == 'v' or event.keysym == 'V') and event.state & 0x0004:
-            file_path = self.ui.window.clipboard_get()
-            if os.path.isfile(file_path):
-                result = messagebox.askyesno("Open a new file", "Do you really want to open a new file?")
-                if result:
-                    self.ui.file_path = file_path
-                    self.ui.import_allow = True
-                    from text_view import TextView
-                    text_view_ = TextView(self.ui)
-                    text_view_.display_text(self.ui)
+        if selected_indexes_count > 2500:
+            selection_model.clearSelection()
+            selected_indexes_count = len(selection_model.selectedIndexes())
 
-        elif (event.keysym == 'i' or event.keysym == 'I') and event.state & 0x0004:
-            file_path = self.ui.window.clipboard_get()
-            if os.path.isfile(file_path):
-                result = messagebox.askyesno("Import a new file", "Do you really want to import a new file?")
-                if result:
-                    from File_Import import FileImport
-                    file_import_ = FileImport(self.ui)
-                    file_import_.import_file(self.ui, True, file_path)
+        self.ui.sel_btn.setText(f"Selected: {selected_indexes_count}")
 
-        elif event.keysym == 'm' or event.keysym == 'M':
-            entry_content = self.ui.entry.get()
+    def update_ori_label(self):
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
 
-            try:
-                value = int(entry_content)
-            except ValueError:
-                return
-
-            if not (0 <= value + 1 <= 60):
-                return
-
-            self.ui.columns = value + 1
-
-            self.ui.entry.delete(0, END)
-            self.ui.entry.insert(END, f"{self.ui.columns:02}")
-
-            from Utilities import Utility
-            utility = Utility(self.ui)
-            self.ui.window.update_idletasks()
-            utility.adjust_columns(self.ui, True)
-
-        elif event.keysym == 'w' or event.keysym == 'W':
-            entry_content = self.ui.entry.get()
-
-            try:
-                value = int(entry_content)
-            except ValueError:
-                return
-
-            if not (0 <= value - 1 <= 60):
-                return
-
-            self.ui.columns = value - 1
-
-            self.ui.entry.delete(0, END)
-            self.ui.entry.insert(END, f"{self.ui.columns:02}")
-
-            from Utilities import Utility
-            utility = Utility(self.ui)
-            self.ui.window.update_idletasks()
-            utility.adjust_columns(self.ui, True)
-
-        elif event.keysym == "Next" or event.keysym == "Prior":
-            return
-
-        return "break"
-
-    def update_selected_count(self, event):
-        if self.ui.text_widget.tag_ranges("sel"):
-            selected_text = self.ui.text_widget.get("sel.first", "sel.last")
+        if len(selected_indexes) == 1:
+            selected_index = selected_indexes[0]
+            row = selected_index.row()
+            col = selected_index.column()
+            index = (row * self.ui.columns) + col
+            if index <= len(self.ui.unpacked):
+                self.ui.value_btn.setText(f"Ori: {self.ui.unpacked[index - self.ui.shift_count]:05}")
+            else:
+                self.ui.value_btn.setText("Ori: 00000")
         else:
-            selected_text = ""
-        self.ui.selected_count = len(selected_text.split())
-        self.ui.selected_count_label.configure(text=f"Selected: {self.ui.selected_count}")
-
-    def show_hex_address_menu(self, event):
-        try:
-            self.sel_start = self.ui.text_widget.index(SEL_FIRST)
-            sel_end = self.ui.text_widget.index(SEL_LAST)
-            selected_text = self.ui.text_widget.get(self.sel_start, sel_end).strip()
-        except tkinter.TclError:
-            return
-        if len(selected_text) == 5:
-            self.ui.hex_address_menu.post(event.x_root, event.y_root)
+            self.ui.value_btn.setText("Ori: 00000")
 
     def copy_hex_address(self):
-        text = str(self.sel_start)
-        parts = text.split('.')
-        row = int(parts[0]) - 1
-        col = int(parts[1]) // 6
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+
+        selected_index = selected_indexes[0]
+        row = selected_index.row()
+        col = selected_index.column()
 
         index = (row * self.ui.columns + col) * 2
 
-        self.ui.window.clipboard_clear()
-        self.ui.window.clipboard_append(f"{index:06X}")
+        clipboard = QApplication.clipboard()
+        clipboard.clear()
+        clipboard.setText(f"{index:06X}")
+
+    def copy_values(self, maps):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        if not maps:
+            if not self.check_selection_rectangle() and not self.check_selection_consecutive():
+                QMessageBox.warning(self.ui, "Warning", "Data selection is not correct!")
+                return None
+        else:
+            if not self.check_selection_consecutive():
+                QMessageBox.warning(self.ui, "Warning", "Data selection is not correct!")
+                return False
+
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+
+        last_row = -1 # for storing previous row
+
+        clipboard = QApplication.clipboard()
+        clipboard.clear()
+
+        text_values = ""
+
+        for item in selected_indexes:
+            row = item.row() # current row
+            col = item.column() # current column
+
+            index = (row * self.ui.columns) + col
+            value = str(self.ui.current_values[index])
+
+            if last_row == -1:
+                text_values += value
+            elif row == last_row:
+                text_values += '\t' + value
+            else:
+                text_values += '\n' + value
+
+            last_row = row
+
+        clipboard.setText(text_values)
+
+        if maps:
+            return True
+
+    def check_selection_rectangle(self):
+        selection_model = self.ui.table_view.selectionModel()  # get all selected items
+        selected_indexes = selection_model.selectedIndexes()  # all selected items
+
+        if len(selected_indexes) < 1 or len(selected_indexes) > 1200:
+            return False
+
+        last_row = selected_indexes[0].row()
+        start_col = selected_indexes[0].column()
+
+        for i in range(1, len(selected_indexes)):
+            row = selected_indexes[i].row()
+            col = selected_indexes[i].column()
+
+            if last_row != row and not last_row + 1 == row:
+                return False
+
+            if last_row != row and start_col != col:
+                return False
+
+
+            last_row = row
+
+        return True
+
+    def check_selection_consecutive(self):
+        selection_model = self.ui.table_view.selectionModel()  # get all selected items
+        selected_indexes = selection_model.selectedIndexes()  # all selected items
+
+        if len(selected_indexes) < 1 or len(selected_indexes) > 1200:
+            return False
+
+        last_row = selected_indexes[0].row()
+        start_col = selected_indexes[0].column()
+
+        for i in range(1, len(selected_indexes)):
+            row = selected_indexes[i].row()
+            col = selected_indexes[i].column()
+
+            if last_row != row and not last_row + 1 == row:
+                return False
+
+            if start_col + 1 == self.ui.columns:
+                start_col = 0
+            else:
+                start_col += 1
+
+            if col != start_col:
+                return False
+
+            last_row = row
+
+        return True
+
+    def check_valid_data(self, clipboard_text ,values, col_ori, row_start, col_start):
+        try:
+            entered_new_line = False
+            x = 0
+            for i in range(len(clipboard_text)): # insert data
+                if values[row_start][col_start] is None:
+                    raise IndexError
+                if clipboard_text[i] == '\t':
+                    x += 1
+                    if col_start + 1 >= self.ui.columns:
+                        row_start += 1
+                        col_start = 0
+                        entered_new_line = True
+                    else:
+                        col_start += 1
+
+                if clipboard_text[i] == '\n':
+                    x += 1
+                    if not entered_new_line:
+                        row_start += 1
+                    else:
+                        entered_new_line = False
+
+                    col_start = col_ori
+
+        except IndexError:
+            QMessageBox.warning(self.ui, "Warning", "Data cannot be pasted!")
+            return False
+
+        return True
+
+    def paste_values(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        selection_model = self.ui.table_view.selectionModel() # get all selected items
+        selected_indexes = selection_model.selectedIndexes() # all selected items
+
+        first_item = selected_indexes[0] # first selected item
+        row_ori = first_item.row() # current row
+        col_ori = first_item.column() # current column
+
+        clipboard = QApplication.clipboard()
+        clipboard_text = clipboard.text() # get text from clipboard
+
+        if clipboard_text[-1] == '\n':
+            clipboard_text = clipboard_text[:-1]
+
+        values_clipboard = clipboard_text.strip().split() # get values, type -> string
+
+        if len(values_clipboard) > 800:
+            QMessageBox.warning(self.ui, "Warning", "Too much data!")
+            return
+
+        for i in range(len(values_clipboard)):
+            try:
+                int(values_clipboard[i])
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning", "Data is not correct!")
+                return
+
+        x = 0 # clipboard values counter
+
+        values = self.ui.model.get_all_data()
+
+        row_start = row_ori
+        col_start = col_ori
+
+        entered_new_line = False
+
+        if not self.check_valid_data(clipboard_text ,values, col_ori, row_start, col_start):
+            return
+
+        try:
+            for i in range(len(clipboard_text)): # insert data
+                if values[row_start][col_start] is None:
+                    raise IndexError
+                if clipboard_text[i] == '\t':
+                    values[row_start][col_start] = int(values_clipboard[x])
+                    x += 1
+                    if col_start + 1 >= self.ui.columns:
+                        row_start += 1
+                        col_start = 0
+                        entered_new_line = True
+                    else:
+                        col_start += 1
+
+                if clipboard_text[i] == '\n':
+                    values[row_start][col_start] = int(values_clipboard[x])
+                    x += 1
+                    if not entered_new_line:
+                        row_start += 1
+                    else:
+                        entered_new_line = False
+
+                    col_start = col_ori
+
+        except IndexError:
+            QMessageBox.warning(self.ui, "Warning", "Data cannot be pasted!")
+            return
+
+        # add last values
+        values[row_start][col_start] = int(values_clipboard[x])
+
+        # reinsert data
+        self.ui.current_values = []
+
+        for i in range(self.ui.shift_count):
+            self.ui.current_values.append(None)
+
+        for row in values:
+            for col in row:
+                if col is not None:
+                    self.ui.current_values.append(col)
+
+        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+        if remaining_elements:
+            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                    self.ui.columns - remaining_elements)  # last row values
+            rows.append(last_row)
+
+        self.ui.model.set_data(rows)
+        self.ui.model.layoutChanged.emit()
+
+        from text_view import TextView
+        text_view = TextView(self.ui)
+
+        text_view.set_labels_y_axis()
+        text_view.set_column_width()
+
+        index_sel = self.ui.model.index(row_ori, col_ori)
+        self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
+
+    def adjust_columns(self, mode):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        time_col_now = time.time()
+
+        if self.time_col + 0.6 >= time_col_now:
+            return
+
+        self.time_col = time.time()
+
+        if mode == "+" and self.ui.columns <= 50:
+            self.ui.columns += 1
+        elif mode == "-" and self.ui.columns > 1:
+            self.ui.columns -= 1
+
+        if self.ui.columns == self.ui.shift_count:
+            self.ui.shift_count -= 1
+            self.ui.entry_shift.setText(f"{self.ui.shift_count:02}")
+
+        values = self.ui.model.get_all_data()
+
+        self.ui.current_values = []
+
+        for i in range(self.ui.shift_count):
+            self.ui.current_values.append(None)
+
+        for row in values:
+            for col in row:
+                if col is not None:
+                    self.ui.current_values.append(col)
+
+        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                     range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+        if remaining_elements:
+            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                    self.ui.columns - remaining_elements)  # last row values
+            rows.append(last_row)
+
+        self.ui.model.set_data(rows)
+        self.ui.model.layoutChanged.emit()
+
+        from text_view import TextView
+        text_view = TextView(self.ui)
+
+        text_view.set_labels_y_axis()
+        text_view.set_column_width()
+
+        self.ui.entry_col.setText(f"{self.ui.columns:02}")
+
+    def shift_values(self, mode):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        time_shift_now = time.time()
+
+        if self.time_shift + 0.6 >= time_shift_now:
+            return
+
+        if mode == "+" and self.ui.shift_count + 1 < self.ui.columns:
+            self.ui.shift_count += 1
+            for i in range(len(self.ui.start_index_maps)):
+                self.ui.start_index_maps[i] += 1
+                self.ui.end_index_maps[i] += 1
+            for i in range(len(self.ui.potential_maps_start)):
+                self.ui.potential_maps_start[i] += 1
+                self.ui.potential_maps_end[i] += 1
+        elif mode == "-" and self.ui.shift_count >= 1:
+            self.ui.shift_count -= 1
+            for i in range(len(self.ui.start_index_maps)):
+                self.ui.start_index_maps[i] -= 1
+                self.ui.end_index_maps[i] -= 1
+            for i in range(len(self.ui.potential_maps_start)):
+                self.ui.potential_maps_start[i] -= 1
+                self.ui.potential_maps_end[i] -= 1
+
+        values = self.ui.model.get_all_data()
+
+        self.ui.current_values = []
+
+        for i in range(self.ui.shift_count):
+            self.ui.current_values.append(None)
+
+        for row in values:
+            for col in row:
+                if col is not None:
+                    self.ui.current_values.append(col)
+
+        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+        if remaining_elements:
+            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                    self.ui.columns - remaining_elements)  # last row values
+            rows.append(last_row)
+
+        self.ui.model.set_data(rows)
+        self.ui.model.layoutChanged.emit()
+
+        from text_view import TextView
+        text_view = TextView(self.ui)
+
+        text_view.set_labels_y_axis()
+        text_view.set_column_width()
+
+        self.ui.entry_shift.setText(f"{self.ui.shift_count:02}")
+
+    def on_tab_changed(self, index):
+        if index == 0:
+            self.ui.tab1_selected = True
+        else:
+            self.ui.tab1_selected = False
+        if index == 1:
+            self.ui.sync_2d_scroll = False
+        else:
+            self.ui.sync_2d_scroll = True
+        if index == 2:
+            self.ui.tk_win_manager.open_tkinter_window()
+            self.ui.focused_3d_tab = True
+        else:
+            self.ui.tk_win_manager.kill_tkinter_window()
+            self.ui.focused_3d_tab = False
+
+    def import_file(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+        import_file_path, selected_filter = QFileDialog.getOpenFileName(self.ui, "Open File")
+        if not import_file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file for importing is currently open. "
+                                                 "Please open a file for importing first.")
+            return
+        if self.ui.file_path:
+            with open(import_file_path, 'rb') as file:
+                content = file.read()
+                if self.ui.low_high:
+                    self.ui.current_values = struct.unpack('<' + 'H' * (len(content) // 2), content)
+                else:
+                    self.ui.current_values = struct.unpack('>' + 'H' * (len(content) // 2), content)
+
+        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+        if remaining_elements:
+            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                    self.ui.columns - remaining_elements)  # last row values
+            rows.append(last_row)
+
+        self.ui.model.set_data(rows)
+        self.ui.model.layoutChanged.emit()
+
+        from text_view import TextView
+        text_view = TextView(self.ui)
+
+        text_view.set_labels_y_axis()
+        text_view.set_column_width()
+
+    def set_text(self, int_value):
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+        if not selected_indexes:
+            QMessageBox.warning(self.ui, "Warning", "There is no values selected!")
+            return
+
+        temp_list = list(self.ui.current_values)
+
+        for item in selected_indexes:
+            row = item.row()
+            col = item.column()
+
+            index = (row * self.ui.columns) + col
+
+            temp_list[index] = int(int_value)
+
+        self.ui.current_values = tuple(temp_list)
+
+        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+        if remaining_elements:
+            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                    self.ui.columns - remaining_elements)  # last row values
+            rows.append(last_row)
+
+        self.ui.model.set_data(rows)
+        self.ui.model.layoutChanged.emit()
+
+        self.ui.text_view_.set_labels_y_axis()
+        self.ui.text_view_.set_column_width()
+
+    def increase_selected_text(self, int_value):
+        try:
+            selection_model = self.ui.table_view.selectionModel()
+            selected_indexes = selection_model.selectedIndexes()
+            if not selected_indexes:
+                QMessageBox.warning(self.ui, "Warning", "There is no values selected!")
+                return
+
+            temp_list = list(self.ui.current_values)
+
+            for item in selected_indexes:
+                row = item.row()
+                col = item.column()
+
+                index_elements = (row * self.ui.columns) + col
+
+                new_value = int_value + self.ui.current_values[index_elements]
+
+                if 0 > new_value or new_value > 65535:
+                    raise ValueError
+
+                index = (row * self.ui.columns) + col
+
+                temp_list[index] = new_value
+
+            self.ui.current_values = tuple(temp_list)
+
+            rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                    range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+            remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+            if remaining_elements:
+                last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                        self.ui.columns - remaining_elements)  # last row values
+                rows.append(last_row)
+
+            self.ui.model.set_data(rows)
+            self.ui.model.layoutChanged.emit()
+
+            self.ui.text_view_.set_labels_y_axis()
+            self.ui.text_view_.set_column_width()
+
+        except ValueError:
+            QMessageBox.warning(self.ui, "Warning", "Please enter a valid number.")
+
+    def increase_selected_text_per(self, float_value):
+        try:
+            percentage_increase = float_value / 100.0
+
+            selection_model = self.ui.table_view.selectionModel()
+            selected_indexes = selection_model.selectedIndexes()
+            if not selected_indexes:
+                QMessageBox.warning(self.ui, "Warning", "There is no values selected!")
+                return
+
+            temp_list = list(self.ui.current_values)
+
+            for item in selected_indexes:
+                row = item.row()
+                col = item.column()
+
+                current_value = int(self.ui.table_view.item(row,col).text())
+                increase_value = int(current_value * percentage_increase)
+
+                new_value = current_value + increase_value
+
+                if 0 > new_value or new_value > 65535:
+                    raise ValueError
+
+                index = (row * self.ui.columns) + col
+
+                temp_list[index] = new_value
+
+            self.ui.current_values = tuple(temp_list)
+
+            rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                    range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+            remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+            if remaining_elements:
+                last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                        self.ui.columns - remaining_elements)  # last row values
+                rows.append(last_row)
+
+            self.ui.model.set_data(rows)
+            self.ui.model.layoutChanged.emit()
+
+            self.ui.text_view_.set_labels_y_axis()
+            self.ui.text_view_.set_column_width()
+
+        except ValueError:
+            QMessageBox.warning(self.ui, "Warning", "Please enter a valid number.")
+
+    def open_find_dialog(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+        from custom_dialogs.find_dialog import FindDialog
+        dialog = FindDialog(self.ui)
+        dialog.exec()
+
+    def open_value_dialog(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+        from custom_dialogs.value_dialog import ValueDialog
+        dialog = ValueDialog(self.ui)
+
+        self.ui.dialog_manager.open_dialog(dialog)
+
+    def open_hex_address_dialog(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+        from custom_dialogs.hex_address_dialog import HexAddressDialog
+        dialog = HexAddressDialog(self.ui)
+
+        dialog.exec()
+
+    def open_difference_dialog(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+        from custom_dialogs.difference_dialog import DifferenceDialog
+        dialog = DifferenceDialog(self.ui)
+        dialog.exec()

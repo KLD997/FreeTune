@@ -1,7 +1,16 @@
-from customtkinter import CTk
+import sys
 from ui import LinOLS
+from PyQt6.QtWidgets import QApplication
 
 if __name__ == "__main__":
-    window = CTk()
-    app = LinOLS(window)
-    window.mainloop()
+    app = QApplication(sys.argv)
+
+    window = LinOLS()
+    window.show()
+
+    exit_code = app.exec()
+
+    window.deleteLater()
+    del window
+
+    sys.exit(exit_code)

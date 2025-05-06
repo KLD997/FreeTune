@@ -1,13 +1,12 @@
 import os
-from tkinter import *
-from tkinter import messagebox, filedialog
+from PyQt6.QtWidgets import QApplication, QMessageBox, QFileDialog
+from PyQt6.QtCore import Qt, QItemSelectionModel
+import subprocess
 
 class Maps_Utility:
     def __init__(self, ui):
         self.ui = ui
-        documents_path = os.path.expanduser("~/Documents")
-
-        self.file_path = os.path.join(documents_path, "mappack.mp")
+        self.file_path = "mappack.mp"
         self.map_data = []
         self.x_axis = []
         self.y_axis = []
@@ -22,16 +21,30 @@ class Maps_Utility:
         self.double_click = False
 
     def add_map(self):
-        from Utilities import Utility
-        utility = Utility(self.ui)
-        utility.copy_values()
-        if utility.nothing_selected:
+        from text_addons import TextAddons
+        text_addons_ = TextAddons(self.ui)
+        if not text_addons_.copy_values(True):
             return
-        data = self.ui.window.clipboard_get()
-        self.start_index = utility.start_selection - self.ui.shift_count
-        self.end_index = utility.end_selection - self.ui.shift_count + 1
-        self.ui.text_widget.tag_remove(SEL, "1.0", END)
-        map_data = data.strip().split()
+
+        selection_model = self.ui.table_view.selectionModel()  # get all selected items
+        selected_indexes = selection_model.selectedIndexes()  # all selected items
+
+        first_row = selected_indexes[0].row()
+        first_col = selected_indexes[0].column()
+
+        last_row = selected_indexes[-1].row()
+        last_col = selected_indexes[-1].column()
+
+        start_index = (first_row * self.ui.columns) + first_col
+        end_index = (last_row * self.ui.columns) + last_col
+
+        self.start_index = start_index
+        self.end_index = end_index
+
+        clipboard = QApplication.clipboard() # get data from clipboard
+        clipboard_text = clipboard.text() # get text from clipboard
+
+        map_data = clipboard_text.strip().split()
         self.find_factors((len(map_data)))
 
     def find_factors(self, data):
@@ -45,61 +58,38 @@ class Maps_Utility:
             self.factor_dialog(factors)
 
     def factor_dialog(self, factors):
-        factor_dialog = Toplevel(bg="#333")
-        screen_width = self.ui.window.winfo_screenwidth()
-        screen_height = self.ui.window.winfo_screenheight()
+        from custom_dialogs.maps_dialogs import Factor_Dialog
+        dialog = Factor_Dialog(self.ui, self, factors)
+        self.ui.dialog_manager.open_dialog(dialog)
 
-        width = 250
-        height = 120
-        x = (screen_width / 2) - (width / 2)
-        y = (screen_height / 2) - (height / 2)
+    def map_name_dialog(self):
+        from custom_dialogs.maps_dialogs import Map_Name_Dialog
+        dialog = Map_Name_Dialog(self.ui, self)
+        self.ui.dialog_manager.open_dialog(dialog)
 
-        factor_dialog.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
-        factor_dialog.title("Map Creator")
+    def value_changer_dialog(self):
+        from custom_dialogs.value_dialog_3d import ValueDialog3D
+        dialog = ValueDialog3D(self.ui)
+        self.ui.dialog_manager.open_dialog(dialog)
 
-        label = Label(factor_dialog, text="Select a factor:", bg="#333", fg="white")
-        label.pack(pady=5)
-        self.factor_list = Listbox(factor_dialog, bg="#333", fg="white")
-        self.factor_list.pack(fill=BOTH, expand=YES)
+    def map_properties_dialog(self, option):
+        if not self.ui.map_opened:
+            QMessageBox.warning(self.ui, "Warning", "Please open a map!")
+            return
+        if option == "map":
+            from custom_dialogs.map_properties_window import MapProperties
+            dialog = MapProperties(self.ui)
+        elif option == "x":
+            from custom_dialogs.x_axis_properties_window import XAxisProperties
+            dialog = XAxisProperties(self.ui)
+        else:
+            from custom_dialogs.y_axis_properties_window import YAxisProperties
+            dialog = YAxisProperties(self.ui)
 
-        self.factor_dialog_window = factor_dialog
+        self.ui.dialog_manager.open_dialog(dialog)
 
-        for i in range(0, len(factors), 2):
-            self.factor_list.insert(i, f"{factors[i]}x{int(factors[i + 1])}")
 
-        self.factor_list.bind('<Double-Button-1>', self.factor_select)
-
-    def factor_select(self, event):
-        selected = self.factor_list.curselection()
-        item = self.factor_list.get(selected[0])
-        self.size = item
-        self.factor_dialog_window.destroy()
-        self.dialog_name()
-
-    def dialog_name(self):
-        dialog_name = Toplevel(bg="#333")
-        screen_width = self.ui.window.winfo_screenwidth()
-        screen_height = self.ui.window.winfo_screenheight()
-
-        self.dialog_name_window = dialog_name
-
-        width = 250
-        height = 100
-        x = (screen_width / 2) - (width / 2)
-        y = (screen_height / 2) - (height / 2)
-
-        dialog_name.geometry(f"{width}x{height}+{int(x)}+{int(y)}")
-        dialog_name.title("Map Creator")
-
-        label = Label(dialog_name, text="Name your map:", bg="#333", fg="white", font=8)
-        label.pack(pady=5)
-        self.name_entry = Entry(dialog_name, bg="#555", fg="white", highlightthickness=0)
-        self.name_entry.pack(pady=5)
-        btn = Button(dialog_name, bg="#444", fg="white", text="Create", highlightthickness=0, command=self.create_map)
-        btn.pack(pady=5)
-
-    def create_map(self):
-        map_name = self.name_entry.get()
+    def create_map(self, map_name):
         if map_name == "":
             return
         self.map_name = map_name
@@ -108,17 +98,21 @@ class Maps_Utility:
                 content = file.read().split('\n')
                 for i in range(len(content)):
                     if content[i] == self.map_name:
-                        messagebox.showerror("Error", "This name is already in use! Choose a new one!")
+                        QMessageBox.warning(self.ui, "Warning", "This name is already in use! Choose a new one!")
+                        if self.ui.potential_map_added:
+                            self.ui.potential_map_added = False
                         return
 
         self.first_run = False
-        self.dialog_name_window.destroy()
-        self.ui.map_list.insert(self.ui.map_list_counter, self.map_name)
+        self.ui.map_list.insertItem(self.ui.map_list_counter, self.map_name)
         self.ui.maps_names.append(self.map_name)
-        self.highlight_text_map(self.start_index, self.end_index)
         self.highlight_2d_map(self.start_index, self.end_index)
         self.write_file_mp()
         self.ui.map_list_counter += 1
+
+        if self.ui.potential_map_added:
+            self.ui.potential_maps_start.pop(self.ui.potential_map_index)
+            self.ui.potential_maps_end.pop(self.ui.potential_map_index)
 
     def write_file_mp(self):
         with open(self.file_path, 'a') as file:
@@ -126,46 +120,66 @@ class Maps_Utility:
             file.write(f"{self.start_index}\n")
             file.write(f"{self.end_index}\n")
             file.write(f"{self.size}\n")
-            file.write(f"{1.0}\n")
-            file.write(f"{0}\n")
-            file.write(f"{1.0}\n")
-            file.write(f"{0}\n")
-            file.write(f"{1.0}\n")
-            file.write(f"{0}")
+            file.write(f"{1.0}\n") # map factor
+            file.write(f"{0}\n") # map decimals
+            file.write(f"{1.0}\n") # x-axis factor
+            file.write(f"{0}\n") # x-axis decimals
+            file.write(f"{1.0}\n") # y-axis factor
+            file.write(f"{0}") # y-axis decimals
 
     def open_map_right_click(self):
-        sel_start = self.ui.text_widget.index(SEL_FIRST)
-        tag_name = self.ui.text_widget.tag_names(sel_start)[1]
+        selection_model = self.ui.table_view.selectionModel()
+        selection_indexes = selection_model.selectedIndexes()
 
-        with open(self.file_path, 'r') as file:
-            content = file.read().split('\n')
-            for i in range(len(content)):
-                if content[i] == tag_name:
-                    if i != 0:
-                        map_index = (i + 1) // 10
-                    else:
-                        map_index = 0
-                    self.last_map_index = map_index
-                    self.double_click = True
-                    self.update_3d_from_text()
-                    self.ui.notebook.select(2)
-                    break
+        if len(selection_indexes) == 1:
+            row = selection_indexes[0].row()
+            col = selection_indexes[0].column()
 
-    def on_double_click(self, event):
-        selection = self.ui.map_list.curselection()
-        if not selection:
-            return
+            index = self.ui.model.index(row, col)
+
+            bg_color = self.ui.model.data(index, Qt.ItemDataRole.BackgroundRole)
+
+            index_value = (row * self.ui.columns) + col
+
+            if bg_color is not None:
+                if bg_color.name() == "#85d7f2":
+                    try:
+                        with open(self.file_path, 'r') as file:
+                            content = file.read().split('\n')
+                            for i in range(len(content)):
+                                if "x" in content[i]:
+                                    start = int(content[i - 2])
+                                    end = int(content[i - 1])
+
+                                    if start <= index_value <= end:
+                                        if i - 3 != 0:
+                                            map_index = (i - 3 + 1) // 10
+                                        else:
+                                            map_index = 0
+                                        self.last_map_index = map_index
+                                        self.double_click = True
+                                        self.update_3d_from_text()
+                                        self.ui.tabs.setCurrentIndex(2)
+                                        break
+                    except ValueError:
+                        QMessageBox.warning(self.ui, "Warning",
+                                            "There is a problem with the mappack file. It appears to have been modified by an user."
+                                            "\nPlease restart the application!")
+                        return
+
+    def on_double_click(self, item):
+        index = self.ui.map_list.row(item)
         self.double_click = True
-        index = selection[0]
         self.last_map_index = index
         self.update_3d_from_text()
-        self.ui.notebook.select(2)
+        self.ui.tabs.setCurrentIndex(2)
 
     def update_3d_from_text(self):
-        item = self.ui.map_list.get(self.last_map_index)
-
-        if not os.path.exists(self.file_path):
+        if not os.path.exists(self.file_path) or self.ui.map_list_counter == 0:
+            QMessageBox.warning(self.ui, "Warning", "Please create or import a mappack!")
             return
+
+        item = self.ui.map_list.item(self.last_map_index).text()
 
         with open(self.file_path, 'r') as file:
             content = file.readlines()
@@ -179,73 +193,65 @@ class Maps_Utility:
             if item_index == -1:
                 return
 
-            start_index = int(content[item_index + 1])
-            end_index = int(content[item_index + 2])
-            size = content[item_index + 3].strip()
+            try:
+                start_index = int(content[item_index + 1])
+                end_index = int(content[item_index + 2]) + 1
+                size = content[item_index + 3].strip()
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning",
+                                    "There is a problem with the mappack file. It appears to have been modified by an user."
+                                    "\nPlease restart the application!")
+                return
 
             self.col, self.row = map(int, size.split('x'))
-            from Module_3D import Mode3D
-            mode3d = Mode3D(self.ui)
 
             self.map_data = self.ui.unpacked[start_index:end_index]
-            mode3d.paste_data(True, self.map_data, self.row, self.col, False, item)
+            self.ui.mode3d.paste_data(True, self.map_data, self.row, self.col, False, item)
 
             if start_index >= self.col + self.row:
                 self.x_axis = self.ui.unpacked[start_index - self.col:start_index]
                 self.y_axis = self.ui.unpacked[start_index - (self.col + self.row):start_index - self.col]
-                mode3d.paste_x_data(True, self.x_axis, False)
-                mode3d.paste_y_data(True, self.y_axis, False)
+                self.ui.mode3d.paste_x_data(True, self.x_axis, False)
+                self.ui.mode3d.paste_y_data(True, self.y_axis, False)
 
-            self.ui.current_values = self.ui.text_widget.get(1.0, END).split()[self.ui.shift_count:]
+            values = self.ui.model.get_all_data()
+
+            self.ui.current_values = []
+
+            for i in range(self.ui.shift_count):
+                self.ui.current_values.append(None)
+
+            for row in values:
+                for col in row:
+                    if col is not None:
+                        self.ui.current_values.append(col)
+
             self.map_data = self.ui.current_values[start_index:end_index]
-            mode3d.paste_data(True, self.map_data, self.row, self.col, True, item)
+            self.ui.mode3d.paste_data(True, self.map_data, self.row, self.col, True, item)
 
             if start_index >= self.col + self.row:
                 self.x_axis = self.ui.current_values[start_index - self.col:start_index]
                 self.y_axis = self.ui.current_values[start_index - (self.col + self.row):start_index - self.col]
-                mode3d.paste_x_data(True, self.x_axis, True)
-                mode3d.paste_y_data(True, self.y_axis, True)
+                self.ui.mode3d.paste_x_data(True, self.x_axis, True)
+                self.ui.mode3d.paste_y_data(True, self.y_axis, True)
 
-            mode3d.check_all()
+        self.ui.mode3d.check_all()
 
-    def highlight_text_map(self, start_index, end_index):
-        self.ui.text_widget.tag_remove(f"{self.map_name}", 1.0, END)
-        self.ui.text_widget.tag_configure(f"{self.map_name}", background="#555")
-
-        start_index += self.ui.shift_count
-        end_index += self.ui.shift_count
-
-        end_index -= 1
-
-        start_row = start_index // self.ui.columns
-        start_col = start_index % self.ui.columns
-
-        end_row = end_index // self.ui.columns
-        end_col = end_index % self.ui.columns
-
-        start = f"{start_row + 1}.{start_col * 6}"
-        end = f"{end_row + 1}.{(end_col + 1) * 6 - 1}"
-
-        self.ui.text_widget.tag_add(f"{self.map_name}", start, end)
-        self.ui.text_widget.see(start)
+        self.ui.map_opened = True
 
     def highlight_2d_map(self, start_index, end_index):
-        start_index += self.ui.shift_count
-        end_index += self.ui.shift_count
-
         self.ui.start_index_maps.append(start_index)
         self.ui.end_index_maps.append(end_index)
 
-        from Module_2D import Mode2D
-        mode2d = Mode2D(self.ui)
-        mode2d.draw_canvas(self.ui)
+        self.ui.sync_2d_scroll = True
+        self.ui.mode2d.draw_canvas(self.ui)
 
     def write_map(self):
         if not os.path.exists(self.file_path):
             return
 
         map_values = []
-        item = self.ui.map_list.get(self.last_map_index)
+        item = self.ui.map_list.item(self.last_map_index).text()
 
         if not self.double_click:
             return
@@ -254,212 +260,300 @@ class Maps_Utility:
             content = file.read().split('\n')
             for i in range(len(content)):
                 if content[i] == item:
-                    self.map_factor = float(content[i + 4])
-                    self.precision = int(content[i + 5])
-                    self.x_axis_factor = float(content[i + 6])
-                    self.x_axis_precision = int(content[i + 7])
-                    self.y_axis_factor = float(content[i + 8])
-                    self.y_axis_precision = int(content[i + 9])
+                    try:
+                        self.map_factor = float(content[i + 4])
+                        self.precision = int(content[i + 5])
+                        self.x_axis_factor = float(content[i + 6])
+                        self.x_axis_precision = int(content[i + 7])
+                        self.y_axis_factor = float(content[i + 8])
+                        self.y_axis_precision = int(content[i + 9])
+                    except ValueError:
+                        QMessageBox.warning(self.ui, "Warning",
+                                            "There is a problem with the mappack file. It appears to have been modified by an user."
+                                            "\nPlease restart the application!")
+                        return
 
-        for yi, entry in enumerate(self.ui.entry_y_widgets):
-            value_entry = float(entry.get().strip())
-            value_before = round(self.ui.y_values[yi])
+        values = self.ui.model.get_all_data() # get current values
+
+        self.ui.current_values = []
+
+        for i in range(self.ui.shift_count):
+            self.ui.current_values.append(None)
+
+        for row in values:
+            for col in row:
+                if col is not None:
+                    self.ui.current_values.append(col)
+
+        for i in range(self.ui.num_rows_3d): # get y axis values
+            value_entry = float(self.ui.box_layout.verticalHeaderItem(i).text())
+            value_before = round(self.ui.y_values[i])
             if (value_entry - value_before) != 0:
                 value = value_entry
             else:
-                value = self.ui.y_values[yi]
+                value = self.ui.y_values[i]
             value /= self.y_axis_factor
             value = round(value)
             map_values.append(int(value))
 
-        for xi, entry in enumerate(self.ui.entry_x_widgets[0]):
-            value_entry = float(entry.get().strip())
-            value_before = round(self.ui.x_values[xi])
+        for i in range(self.ui.num_columns_3d): # get x axis values
+            value_entry = float(self.ui.box_layout.horizontalHeaderItem(i).text())
+            value_before = round(self.ui.x_values[i])
             if (value_entry - value_before) != 0:
                 value = value_entry
             else:
-                value = self.ui.x_values[xi]
-            value /= self.y_axis_factor
+                value = self.ui.x_values[i]
+            value /= self.x_axis_factor
             value = round(value)
             map_values.append(int(value))
 
         index_map = 0
-
-        for i in range(self.ui.rows_3d):
-            for j in range(self.ui.columns_3d):
-                value_entry = float(self.ui.entry_widgets[i][j].get().strip())
+        for i in range(self.ui.num_rows_3d): # get map values
+            for x in range(self.ui.num_columns_3d):
+                value_entry = float(self.ui.box_layout.item(i, x).text())
                 value_before = round(self.ui.map_values[index_map])
                 if (value_entry - value_before) != 0:
                     value = value_entry
                 else:
                     value = self.ui.map_values[index_map]
                 value /= self.map_factor
-                index_map += 1
                 value = round(value)
                 map_values.append(int(value))
-
-        self.ui.current_values = self.ui.text_widget.get(1.0, END).split()
+                index_map += 1
 
         with open(self.file_path, 'r') as file:
             content = file.read().split('\n')
             index = self.last_map_index * 10
-            start = int(content[index + 1]) + self.ui.shift_count
-            end = int(content[index + 2]) + self.ui.shift_count
+            try:
+                start = int(content[index + 1])
+                end = int(content[index + 2])
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning",
+                                    "There is a problem with the mappack file. It appears to have been modified by an user."
+                                    "\nPlease restart the application!")
+                return
 
-        index = 0
+        x = 0
 
-        for i in range(start - (xi + 1 + yi + 1), end):
-            self.ui.current_values[i] = map_values[index]
-            index += 1
+        for i in range(start - (self.ui.num_rows_3d + self.ui.num_columns_3d), end + 1):
+            self.ui.current_values[i] = map_values[x]
+            x += 1
 
-        self.ui.text_widget.delete(1.0, END)
+        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
 
-        rows = [self.ui.current_values[i:i + self.ui.columns] for i in range(0, len(self.ui.current_values), self.ui.columns)]
+        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
 
-        for row in rows:
-            formatted = ' '.join(f"{value:05}" for value in row)
-            self.ui.text_widget.insert(END, formatted + '\n')
+        if remaining_elements:
+            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                    self.ui.columns - remaining_elements)  # last row values
+            rows.append(last_row)
 
-        self.reapply_highlight_text()
+        self.ui.model.set_data(rows)
+        self.ui.model.layoutChanged.emit()
 
-        from Module_2D import Mode2D
-        from Utilities import Utility
-        mode2d = Mode2D(self.ui)
-        utility = Utility(self.ui)
-        mode2d.update_2d(self.ui)
-        int_values = [int(x) for x in self.ui.current_values]
-        utility.check_difference_values(int_values, True, self.ui)
+        from text_view import TextView
+        text_view = TextView(self.ui)
 
-    def reapply_highlight_text(self):
-        if not os.path.exists(self.file_path):
-            return
-        tags = self.ui.text_widget.tag_names()
-        for tag in tags:
-            self.ui.text_widget.tag_delete(tag)
-        with open(self.file_path, 'r') as file:
-            content = file.read().split('\n')
-            for i in range(0, len(content), 10):
-                map_name = content[i]
-                start_index = int(content[i + 1]) + self.ui.shift_count
-                end_index = int(content[i + 2]) + self.ui.shift_count
+        text_view.set_labels_y_axis()
+        text_view.set_column_width()
 
-                self.ui.text_widget.tag_configure(f"{map_name}", background="#555")
-
-                end_index -= 1
-
-                start_row = start_index // self.ui.columns
-                start_col = start_index % self.ui.columns
-
-                end_row = end_index // self.ui.columns
-                end_col = end_index % self.ui.columns
-
-                start = f"{start_row + 1}.{start_col * 6}"
-                end = f"{end_row + 1}.{(end_col + 1) * 6 - 1}"
-
-                self.ui.text_widget.tag_add(f"{map_name}", start, end)
+        self.ui.mode2d.draw_canvas(self.ui)
 
     def remove_item(self):
-        selected_index = self.ui.map_list.curselection()
+        selected_index = self.ui.map_list.currentRow()
+        item = self.ui.map_list.item(selected_index).text()
 
         start_index = 0
         end_index = 0
 
-        if selected_index:
-            index = selected_index[0]
-            if self.last_map_index == index:
-                from Module_3D import Mode3D
-                mode3d = Mode3D(self.ui)
-                mode3d.set_default()
-            item = self.ui.map_list.get(index)
-            self.reapply_highlight_text()
-            with open(self.file_path, 'r') as file:
-                content = file.read().split("\n")
-                for i in range(len(content)):
-                    if content[i] == item:
-                        start_index = int(content[i + 1])
-                        end_index = int(content[i + 2])
-                        del content[i:i + 10]
-                        break
-            with open(self.file_path, 'w') as file:
-                for i in range(len(content)):
-                    file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
-            self.ui.map_list_counter -= 1
-            self.ui.map_list.delete(selected_index)
-            self.ui.text_widget.tag_remove(item, 1.0, END)
-
-            self.ui.start_index_maps.remove(start_index + self.ui.shift_count)
-            self.ui.end_index_maps.remove(end_index + self.ui.shift_count)
-
-            from Module_2D import Mode2D
-            mode2d = Mode2D(self.ui)
-
-            mode2d.draw_canvas(self.ui)
-
-    def show_context_menu(self, event):
-        selected_index = self.ui.map_list.curselection()
-        if selected_index:
-            self.ui.remove_menu.post(event.x_root, event.y_root)
-
-    def hide_context_menu(self, event):
-        self.ui.remove_menu.unpost()
-        self.ui.right_click_map_menu.unpost()
-        self.ui.right_click_x_axis.unpost()
-        self.ui.right_click_y_axis.unpost()
-        self.ui.hex_address_menu.unpost()
-
-    def import_map(self):
-        file_path = filedialog.askopenfilename()
-        if file_path:
-            self.ui.map_list_counter = 0
-            self.last_map_index = 0
+        if self.last_map_index == selected_index:
             from Module_3D import Mode3D
             mode3d = Mode3D(self.ui)
             mode3d.set_default()
-            with open(file_path, 'r') as file:
-                content = file.read().split('\n')
-                if len(content) % 10 == 0:
-                    with open(self.file_path, 'w') as temp_file:
-                        for i in range(len(content)):
-                            temp_file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
-                        self.ui.map_list.delete(0, END)
-                        self.ui.maps_names = []
-                        self.first_run = False
-                    for i in range(len(content) // 10):
-                        self.map_name = content[i * 10]
-                        self.start_index = int(content[(i * 10) + 1])
-                        self.end_index = int(content[(i * 10) + 2])
-                        self.size = content[(i * 10) + 3]
-                        self.ui.map_list.insert(self.ui.map_list_counter, self.map_name)
-                        self.ui.maps_names.append(self.map_name)
-                        self.highlight_text_map(self.start_index, self.end_index)
-                        self.highlight_2d_map(self.start_index, self.end_index)
-                        self.ui.map_list_counter += 1
-                    self.reapply_highlight_text()
-                else:
-                    messagebox.showerror("Error", "Please select a valid file!")
-                    return
-
-    def export_map(self):
-        if self.file_path == "":
-            messagebox.showerror("Error", "You have to create or import a mappack before you can export it!")
-            return
-
-        file_path = filedialog.askopenfilename()
-
-        with open(self.file_path, 'r') as ori:
-            content = ori.read().split('\n')
-
-        with open(file_path, 'w') as file:
+        with open(self.file_path, 'r') as file:
+            content = file.read().split("\n")
+            for i in range(len(content)):
+                if content[i] == item:
+                    try:
+                        start_index = int(content[i + 1])
+                        end_index = int(content[i + 2])
+                    except ValueError:
+                        QMessageBox.warning(self.ui, "Warning",
+                                            "There is a problem with the mappack file. It appears to have been modified by an user."
+                                            "\nPlease restart the application!")
+                        return
+                    del content[i:i + 10]
+                    break
+        with open(self.file_path, 'w') as file:
             for i in range(len(content)):
                 file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
+        self.ui.map_list_counter -= 1
+        self.ui.map_list.takeItem(selected_index)
+
+        self.ui.start_index_maps.remove(start_index)
+        self.ui.end_index_maps.remove(end_index)
+
+        self.ui.mode2d.draw_canvas(self.ui)
+
+    def import_map(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        file_path, selected_filter = QFileDialog.getOpenFileName(self.ui, "Import MapPack", "", "MapPack Files (*.mp)")
+
+        if file_path:
+            try:
+                self.ui.map_list_counter = 0
+                self.last_map_index = 0
+                from Module_3D import Mode3D
+                mode3d = Mode3D(self.ui)
+                mode3d.set_default()
+                with open(file_path, 'r') as file:
+                    content = file.read().split('\n')
+                    if len(content) % 10 == 0:
+                        with open(self.file_path, 'w') as temp_file:
+                            for i in range(len(content)):
+                                temp_file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
+                            self.ui.map_list.clear()
+                            self.ui.maps_names = []
+                            self.first_run = False
+                        for i in range(len(content) // 10):
+                            self.map_name = content[i * 10]
+                            self.start_index = int(content[(i * 10) + 1])
+                            self.end_index = int(content[(i * 10) + 2])
+                            self.size = content[(i * 10) + 3]
+                            self.ui.map_list.insertItem(self.ui.map_list_counter, self.map_name)
+                            self.ui.maps_names.append(self.map_name)
+                            self.highlight_2d_map(self.start_index, self.end_index)
+                            self.ui.map_list_counter += 1
+                    else:
+                        raise ValueError
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning", "Please select a valid file!")
+                self.ui.map_list_counter -= 1
+                self.ui.map_list.clear()
+
+                self.ui.start_index_maps.clear()
+                self.ui.end_index_maps.clear()
+
+    def export_map(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        if not self.ui.map_list_counter:
+            QMessageBox.warning(self.ui, "Warning", "You have to create or import a mappack before you can export it!")
+            return
+
+        file_path, selected_filter = QFileDialog.getSaveFileName(self.ui, "Save File", "MapPack.mp", "MapPack Files (*.mp)")
+
+        if file_path:
+            with open(self.file_path, 'r') as ori:
+                content = ori.read().split('\n')
+
+            with open(file_path, 'w') as file:
+                for i in range(len(content)):
+                    file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
+
+        else:
+            QMessageBox.warning(self.ui, "Warning", "No file was selected for saving!")
 
     def sign_values(self):
-        from Module_3D import Mode3D
-        mode3d = Mode3D(self.ui)
-
         if self.ui.signed_values:
             self.ui.signed_values = False
         else:
             self.ui.signed_values = True
 
-        mode3d.update_3d_view()
+    def add_potential_map(self):
+        selection_model = self.ui.table_view.selectionModel()
+        selection_indexes = selection_model.selectedIndexes()
+
+        if len(selection_indexes) == 1:
+            row = selection_indexes[0].row()
+            col = selection_indexes[0].column()
+
+            index_value = (row * self.ui.columns) + col
+
+            self.ui.potential_map_index = None
+
+            selected_indexes = []
+            for i in range(len(self.ui.potential_maps_start)):
+                start = self.ui.potential_maps_start[i]
+                end = self.ui.potential_maps_end[i]
+
+                if start <= index_value <= end:
+                    for j in range(start, end + 1):
+                        selected_row = j // self.ui.columns
+                        selected_col = j % self.ui.columns
+                        selected_indexes.append(self.ui.table_view.model().index(selected_row, selected_col))
+                    self.ui.potential_map_index = i
+                    break
+
+            if self.ui.potential_map_index is None:
+                QMessageBox.warning(self.ui, "Warning", "There is no potential map on the selected cell!")
+                return
+
+            if selected_indexes:
+                for index in selected_indexes:
+                    selection_model.select(index, QItemSelectionModel.SelectionFlag.Select)
+
+                self.add_map()
+
+    def remove_potential_map(self):
+        selection_model = self.ui.table_view.selectionModel()
+        selection_indexes = selection_model.selectedIndexes()
+
+        if len(selection_indexes) == 1:
+            row = selection_indexes[0].row()
+            col = selection_indexes[0].column()
+
+            index_value = (row * self.ui.columns) + col
+
+            potential_map_index = None
+
+            for i in range(len(self.ui.potential_maps_start)):
+                start = self.ui.potential_maps_start[i]
+                end = self.ui.potential_maps_end[i]
+
+                if start <= index_value <= end:
+                    potential_map_index = i
+                    break
+
+            if potential_map_index is None:
+                QMessageBox.warning(self.ui, "Warning", "There is no potential map on the selected cell!")
+                return
+
+            self.ui.potential_maps_start.pop(potential_map_index)
+            self.ui.potential_maps_end.pop(potential_map_index)
+
+            QMessageBox.information(self.ui, "Info", "Potential map has been successfully removed!")
+
+            self.ui.sync_2d_scroll = True
+            self.ui.mode2d.draw_canvas(self.ui)
+
+    def start_potential_map_search(self, restart):
+        if restart:
+            if not self.ui.file_path:
+                QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+                return
+            reply = QMessageBox.question(
+                self.ui,
+                'Confirm Action',
+                'Are you sure you want to start the potential map search?',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if reply != QMessageBox.StandardButton.Yes:
+                QMessageBox.information(self.ui, "Info", "Potential map search canceled.")
+                return
+
+        from potential_maps.potential_maps import Potential_maps_manager
+        self.potential_maps_manager = Potential_maps_manager(self.ui)
+        self.potential_maps_manager.find_potential_maps()
+
+        if restart:
+            self.ui.sync_2d_scroll = True
+            self.ui.mode2d.draw_canvas(self.ui)

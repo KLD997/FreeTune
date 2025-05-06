@@ -1,0 +1,1 @@
+pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' main.py

@@ -12,11 +12,9 @@ LinOLS is a free, open-source chiptuning software. It allows for advanced ECU ma
 - Customizable to suit various ECU tuning needs.
 
 ## How to run LinOLS on Linux
-You can download an `executable` for Linux, executable is located under `Linux_executable` map in this repository.
+You can download the `executable` for Linux, which is located under the `latest release` in this repository.
 
 And then you just run it with `./LinOLS`.
-
-Important: If you install the executable only thing you need to download is `zenity`, if you don't have it already.
 
 ## How to run LinOLS on Windows
 You can download an `setup file` for Window 10/11 64bit in map called `Windows_Setup` in this repository. 
@@ -32,9 +30,7 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   - Check if Python is installed: `python3 --version`
   - If not installed, you can install it using your system package manager.
 
-### Required Dependencies
-
-#### Python Dependencies
+### Python Dependencies
 
 - **matplotlib**: A plotting library for Python used for graphical representation.
   
@@ -42,11 +38,11 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   ```bash
   pip install matplotlib
 
-- **customtkinter**: A GUI library for Python used for making GUI applications.
+- **pyqt6**: A GUI library for Python used for making GUI applications.
   
-  To install `customtkinter`, use `pip`:
+  To install `pyqt6`, use `pip`:
   ```bash
-  pip install customtkinter
+  pip install pyqt6
 
 - **tkinter**: A GUI library for Python used for making GUI applications.
 
@@ -64,24 +60,7 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   ```bash
   sudo dnf install python3-tkinter
   ```
-#### Other Dependencies
-
-- **zenity**: A package for Gnu/Linux distros used for making things like file dialogs.
-
-  To install `zenity`, use your distro's `package manager`:
   
-  Arch based distros:
-  ```bash
-  sudo pacman -S zenity
-  ```
-  Ubuntu/Debian based distros:
-  ```bash
-  sudo apt install zenity
-  ```
-  Fedora based distros:
-  ```bash
-  sudo dnf install zenity
-  ```
 ## How to run LinOLS
   When you installed all dependencies and they are working as intended you can run LinOLS using the following command:
   ```bash
@@ -94,9 +73,15 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   pip install pyinstaller
   ```
   Once you have pyinstaller installed you can run this command in the `"LinOLS directory"`:
+  Linux:
   ```bash
-  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' main.py
+  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' main.py
   ```
+  Windows:
+  ```bash
+  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cp313-win_amd64.pyd:.' --icon=icon.ico main.py
+  ```
+
 ## Desktop Shortcut
   If you want you can use a provided template desktop shortcut named: `LinOLS.desktop`.
   New update
@@ -106,9 +91,14 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
 ## Instructions
   ### Text Tab
-  You can select multiple numbers with holding the `left click` and then draging with your mouse. You can only drag from up to down.
+  You can select multiple numbers with holding the `left click` and then draging with your mouse.
 
-  You can select one value and right click on text widget to `copy value's hex address` or `open a map`.
+  You can select one value and right click on text widget to `Copy Hex Address`, `Open Map`, `Add Potential Map` or `Remove Potential Map`.
+
+  `Copy Hex Address` - Copies hex address of a selected value. 
+  `Open Map` - Open a map if the selected value is a map value.
+  `Add Potential Map` - Adds a potential map to your user maps.
+  `Remove Potential Map` - Removes a potential map from your project.
   
   You can use 'm'/'M' to increase number of columns by one or use 'w'/'W' to decrease the columns by one.
   
@@ -116,15 +106,17 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `16-bit Lo-Hi and 16-Bit Hi-Lo` are for chaning the byte order and changing the mode will ERASE any changes done.
 
-  `Selected: #` button is for showing you how many numbers do you have selected currently
+  `Add Map` is used for adding a new map
 
-  `Ori: #` buttion is for showing the original value of the selected value.
+  `Text to 2D` is used to show where the selected value or values are in 2d mode.
+
+  `Selected: #` button is for showing you how many numbers do you have selected currently
 
   `Columns box` is used for changing the number of columns.
 
   `Shift box` is used for changing the shift value which basicly moves every value for x times to the right.
 
-  `Text to 2D` is used to show where the selected value or values are in 2d mode.
+  `Ori: #` buttion is for showing the original value of the selected value.
 
   `Copy` is used for copying values into Excel or LibreCalc
 
@@ -160,11 +152,11 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   To rotate 3D plot hold left click and drag it around.
   
-  You can right click on both axis and any map value to change the axis's/map's properties.
+  You can right click on both axis and any map value to change the `axis's/map's properties`.
 
-  Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`
+  By right clicking on any map value you can `sign map values in 3d`.
 
-  `Sign` is used to sign values in 3d plot view.
+  Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`.
 
   `Copy Map` copy the values of the map without axis to clipboard.
 
@@ -190,7 +182,7 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Paste Selected` is used to paste values from clipboard to the location of the starting value / ONE selected value.
 
-  `Paste` is used to paste the map to 3d grid, excluding both axis.
+  `Paste Map` is used to paste the map to 3d grid, excluding both axis.
 
   ### Maps Tab
   `Maps Tab` is used to show all of the created or imported maps.
@@ -213,20 +205,26 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Find Hex Address` is used to find your hex address in opened file.
 
+  `Restart Map Search` is used to restart potential map search.
+
   ### Mappack Menu
   `Import Mappack` is used to import mappack / `.mp` files.
 
   `Export Mappack` is used to export mappack / `.mp` files.  
 
   ### Shortcuts
-  Edit mode - `E`
-
   Skip to the next changed value in 2d mode - `n` or `N`
   
   Ship to the previous changed value in 2d mode - `v` or `V`
 
-  Value Dialog - Shift + 5 (Can be accessible via Options menu)
+  `Ctrl+F` - find dialog
 
-  `Ctrl+V` on Text view for opening files fast
+  `Ctrl+G` - find hex address dialog
 
-  `Ctrl+I` on Text view for importing files fast
+  `Shift+5` - value changer dialog
+
+  `w` - decrement number of columns by one
+
+  `m` - increase number of columns by one
+
+  `k` - add a new map

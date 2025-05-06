@@ -1,7 +1,7 @@
-from tkinter import *
-from tkinter import messagebox
 import numpy as np
 import time
+from PyQt6.QtCore import QItemSelectionModel
+from PyQt6.QtWidgets import QMessageBox, QTableView
 
 class Mode2D:
     def __init__(self, ui):
@@ -9,6 +9,7 @@ class Mode2D:
         self.last_page_change_time = 0
         self.is_dragging = False
         self.last_x = 0
+        self.highlight_enabled = False
 
     def scale_to_fixed_range(self, data, min_val=0, max_val=65535):
         return [min(max(val, min_val), max_val) for val in data]
@@ -17,11 +18,11 @@ class Mode2D:
         self.ui = ui
         self.ui.ax.clear()
 
-        start_index = self.ui.current_frame
-        end_index_mod = min(start_index + self.ui.num_rows * self.ui.columns, len(self.ui.new_values))
-        data_unpacked_mod = self.ui.new_values[start_index:end_index_mod]
+        start_index = self.ui.current_frame + self.ui.shift_count
+        end_index_mod = min(start_index + self.ui.num_rows * self.ui.columns, len(self.ui.current_values)) + self.ui.shift_count
+        data_unpacked_mod = self.ui.current_values[start_index:end_index_mod]
 
-        data_unpacked = self.ui.unpacked[start_index:end_index_mod]
+        data_unpacked = self.ui.unpacked[start_index - self.ui.shift_count:end_index_mod - self.ui.shift_count]
 
         scaled_data_mod = self.scale_to_fixed_range(data_unpacked_mod)
         scaled_data = self.scale_to_fixed_range(data_unpacked)
@@ -31,14 +32,19 @@ class Mode2D:
 
         mask = scaled_data_mod != scaled_data
 
-        self.ui.ax.plot(scaled_data_mod, color="white", linewidth=0.5)
+        self.ui.ax.plot(scaled_data, color="white", linewidth=0.5)
 
         if np.any(mask):
             differing_indices = np.where(mask)[0]
             segments = np.split(differing_indices, np.where(np.diff(differing_indices) != 1)[0] + 1)
 
             for segment in segments:
-                self.ui.ax.plot(segment, scaled_data_mod[segment], color="red", linewidth=0.5)
+                # Expand segment to include one value before and after, safely
+                start = max(segment[0] - 1, 0)
+                end = min(segment[-1] + 2, len(scaled_data_mod))  # +2 because slicing is exclusive at the end
+                extended_segment = np.arange(start, end)
+
+                self.ui.ax.plot(extended_segment, scaled_data_mod[extended_segment], color="red", linewidth=0.5)
 
         if self.ui.red_line is not None:
             self.ui.ax.axvline(self.ui.red_line, color="#bd090e", linestyle='-', label="Clicked Position")
@@ -48,29 +54,49 @@ class Mode2D:
 
         start_maps = self.ui.start_index_maps
         end_maps = self.ui.end_index_maps
-
         frame = self.ui.num_rows * self.ui.columns
-        for i in range(len(self.ui.start_index_maps)):
-            ok = False
 
+        # User created maps
+
+        for i in range(len(self.ui.start_index_maps)):
             start = start_maps[i]
             end = end_maps[i]
 
-            if (end - start_index) >= 0:
-                ok = True
-                temp = end - start_index
-                if temp <= start_index + frame:
-                    end = temp
+            new_start = start - start_index
+            new_end = end - start_index
 
-            if (start - start_index) >= 0 and ok:
-                temp = start - start_index
-                if temp <= start_index + frame:
-                    start = temp
+            if 0 <= new_start <= frame and 0 <= new_end <= frame:
+                self.ui.ax.axvspan(new_start, new_end, color="#85d7f2", alpha=0.3, label=f"{self.ui.maps_names[i]}")
+
+        # Display -> Potential maps
+
+        start_maps = self.ui.potential_maps_start
+        end_maps = self.ui.potential_maps_end
+
+        found_maps = False
+
+        for i in range(len(self.ui.potential_maps_start)):
+            start = start_maps[i]
+            end = end_maps[i]
+
+            new_start = start - start_index
+            new_end = end - start_index
+
+            if 0 <= new_end <= frame and 0 <= new_start <= frame:
+                self.ui.ax.axvspan(new_start, new_end, color="#01857b", alpha=0.3,
+                                    label=f"{self.ui.potential_maps_names[i]}")
+                found_maps = True
             else:
-                start = 0
+                if found_maps:
+                    break
 
-            if ok:
-                self.ui.ax.axvspan(start, end, color="#907900", alpha=0.3, label=f"{self.ui.maps_names[i]}")
+        if not self.highlight_enabled and not self.ui.display_sel and not self.ui.sync_2d_scroll: # calibrate text to 2d
+            row = (start_index - self.ui.shift_count) // self.ui.columns
+            index_sel = self.ui.model.index(row, 0)
+            self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
+
+            selection_model = self.ui.table_view.selectionModel()
+            selection_model.clearSelection()
 
         self.ui.ax.set_xlim(0, len(scaled_data_mod))
         self.ui.ax.set_ylim(0, 65535)
@@ -81,33 +107,9 @@ class Mode2D:
         self.ui.canvas.draw()
 
         if self.ui.return_text:
-            self.scroll_to_highlight(self.ui)
             self.ui.return_text = False
         self.ui.display_sel = False
-
-    def highlight_text(self, x):
-        if self.ui.current_frame > 0:
-            value_index = x + self.ui.current_frame
-        else:
-            value_index = x
-        self.ui.text_widget.tag_remove("highlight", 1.0, END)
-        self.ui.text_widget.tag_configure("highlight", background="#907900")
-
-        row = value_index // self.ui.columns
-        col = value_index % self.ui.columns
-
-        start = f"{row + 1}.{col * 6}"
-        end = f"{row + 1}.{(col + 1) * 6 - 1}"
-
-        self.ui.text_widget.tag_add("highlight", start, end)
-        self.ui.text_widget.see(start)
-
-        self.ui.highlight_start = value_index
-        value = self.ui.current_values[x + self.ui.current_frame]
-
-        self.ui.text_value.configure(text=f"Value: {value:05}")
-
-        self.ui.window.update_idletasks()
+        self.highlight_enabled = False
 
     def on_canvas_click(self, event):
         if not self.ui.unpacked:
@@ -116,38 +118,76 @@ class Mode2D:
         if x_pos is not None:
             self.ui.display_sel = False
             self.ui.red_line = int(x_pos)
-            self.highlight_text(self.ui.red_line)
+            self.highlight_text(self.ui.red_line, False)
             self.draw_canvas(self.ui)
 
+    def highlight_text(self, x, find_on):
+        x += self.ui.shift_count
+        if self.ui.current_frame > 0 and not find_on:
+            value_index = x + self.ui.current_frame
+        else:
+            value_index = x
+
+        self.ui.table_view.clearSelection()
+
+        row = value_index // self.ui.columns
+        col = (value_index % self.ui.columns)
+        # scroll to highlight
+        index_sel = self.ui.model.index(row, col)
+        self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
+
+        index = self.ui.model.index(row, col)
+        selection_model = self.ui.table_view.selectionModel()
+        selection_model.select(index, QItemSelectionModel.SelectionFlag.Select)
+
+        if not find_on:
+            value = self.ui.current_values[x + self.ui.current_frame]
+        else:
+            value = self.ui.current_values[x]
+
+        self.ui.value_btn_2d.setText(f"Value: {value:05}")
+
+        self.highlight_enabled = True
+
     def prev_page(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
         current_time = time.time()
         if current_time - self.last_page_change_time < 0.12:
             return
         if self.ui.current_frame - self.ui.num_rows * self.ui.columns >= 0:
+            self.ui.red_line = None
             self.ui.current_frame -= self.ui.num_rows * self.ui.columns
-            if self.ui.text_widget.tag_ranges(SEL):
-                self.ui.text_widget.tag_remove(SEL, 1.0, END)
             self.draw_canvas(self.ui)
 
     def next_page(self):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
         current_time = time.time()
         if current_time - self.last_page_change_time < 0.12:
             return
         if self.ui.current_frame + self.ui.num_rows * self.ui.columns < len(self.ui.unpacked):
+            self.ui.red_line = None
             self.ui.current_frame += self.ui.num_rows * self.ui.columns
-            if self.ui.text_widget.tag_ranges(SEL):
-                self.ui.text_widget.tag_remove(SEL, 1.0, END)
             self.draw_canvas(self.ui)
 
     def fast_movement(self, direction):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
         current_time = time.time()
         if current_time - self.last_page_change_time < 0.12:
             return
-        if self.ui.text_widget.tag_ranges(SEL):
-            self.ui.text_widget.tag_remove(SEL, 1.0, END)
+        self.ui.red_line = None
         if direction == "right":
-            self.ui.current_frame += 200
-            self.draw_canvas(self.ui)
+            if self.ui.current_frame + 200 < len(self.ui.unpacked):
+                self.ui.current_frame += 200
+                self.draw_canvas(self.ui)
         elif direction == "left":
             self.ui.current_frame -= 200
             if self.ui.current_frame > 0:
@@ -157,123 +197,135 @@ class Mode2D:
                 self.draw_canvas(self.ui)
 
     def percentage(self, entry, arg):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
         if entry:
             try:
-                num = int(self.ui.percentage_entry.get())
+                num = int(self.ui.entry_percentage.text())
                 if num < 0 or num > 100:
                     raise ValueError
                 self.ui.percentage_num = num
+                self.ui.entry_percentage.setText(f"{self.ui.percentage_num:02}")
             except ValueError:
-                messagebox.showerror("Error", "Enter a correct value! (0% - 100%)")
+                QMessageBox.warning(self.ui, "Warning", "Enter a correct value! (0% - 100%)")
                 return
         else:
-            if arg == "plus" and self.ui.percentage_num < 99:
+            if arg == "+" and self.ui.percentage_num < 99:
                 self.ui.percentage_num += 1
                 num = self.ui.percentage_num
-                self.ui.percentage_entry.delete(0, END)
-                self.ui.percentage_entry.insert(END, f"{self.ui.percentage_num:02}")
-            elif arg == "minus" and self.ui.percentage_num > 0:
+                self.ui.entry_percentage.setText(f"{self.ui.percentage_num:02}")
+            elif arg == "-" and self.ui.percentage_num > 0:
                 self.ui.percentage_num -= 1
                 num = self.ui.percentage_num
-                self.ui.percentage_entry.delete(0, END)
-                self.ui.percentage_entry.insert(END, f"{self.ui.percentage_num:02}")
+                self.ui.entry_percentage.setText(f"{self.ui.percentage_num:02}")
             else:
                 num = 0
-        if 0 < num <= 100:
+        if 0 <= num <= 100:
+            self.ui.red_line = None
             self.ui.current_frame = int((len(self.ui.unpacked) - self.ui.num_rows * self.ui.columns) * (num / 100))
-            if self.ui.text_widget.tag_ranges(SEL):
-                self.ui.text_widget.tag_remove(SEL, 1.0, END)
             self.draw_canvas(self.ui)
-
-    def update_2d(self, ui):
-        self.ui = ui
-        from File_Import import FileImport
-        self.file_import = FileImport(self)
-        self.file_import.temp_safe(self.ui)
-        self.draw_canvas(self.ui)
-
-    def scroll_to_highlight(self, ui):
-        self.ui = ui
-        if self.ui.highlight_start is not None:
-            self.ui.text_widget.tag_remove("highlight", 1.0, END)
-            row = self.ui.highlight_start // self.ui.columns
-            col = self.ui.highlight_start % self.ui.columns
-
-            start = f"{row + 1}.{col * 6}"
-            end = f"{row + 1}.{(col + 1) * 6 - 1}"
-
-            self.ui.text_widget.tag_add("highlight", start, end)
-            self.ui.text_widget.see(start)
-
 
     def text_to_2d(self, ui):
+        if not self.ui.text_addons.check_selection_consecutive():
+            QMessageBox.warning(self.ui, "Warning", "Data selection is not correct!")
+            return
+
         self.ui = ui
-        if self.ui.text_widget.tag_ranges(SEL):
-            sel_start = self.ui.text_widget.index(SEL_FIRST)
-            sel_end = self.ui.text_widget.index(SEL_LAST)
-            selected_text = self.ui.text_widget.get(sel_start, sel_end).strip()
-            selected_count = len(selected_text.split())
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+        selected_indexes_count = len(selection_model.selectedIndexes())
 
-            if len(selected_text) == 5:
-                text = str(sel_start)
-                parts = text.split('.')
-                row = int(parts[0]) - 1
-                col = int(parts[1]) // 6
+        if selected_indexes_count == 1:
+            self.ui.display_sel = False
+            item = selected_indexes[0]
+            row = item.row()  # current row
+            col = item.column()  # current column
 
-                self.ui.display_sel = False
+            index = row * self.ui.columns + col - self.ui.shift_count
 
-                index = row * self.ui.columns + col
-                frame = self.ui.num_rows * self.ui.columns
-                frames_num = index // frame
-                self.ui.current_frame = frames_num * frame
+            self.ui.red_line = int(index) - self.ui.current_frame
 
-                if self.ui.current_frame > 0:
-                    self.ui.red_line = int(index) - self.ui.current_frame
-                else:
-                    self.ui.red_line = int(index)
+            self.highlight_text(index, True)
 
-                self.ui.text_widget.tag_remove("highlight", 1.0, END)
-                self.ui.text_widget.tag_configure("highlight", background="#907900")
-                self.ui.text_widget.tag_add("highlight", sel_start, sel_end)
-                self.ui.text_widget.see(sel_start)
+            value = self.ui.current_values[index + self.ui.shift_count]
+            self.ui.value_btn_2d.setText(f"Value: {value:05}")
 
-                self.ui.highlight_start = index
-                value = self.ui.current_values[index]
-                self.ui.text_value.configure(text=f"Value: {value:05}")
+        if selected_indexes_count > 1:
+            first_item = selected_indexes[0]
 
-            if 1 < selected_count <= 1000:
-                text_start = str(sel_start)
-                parts_start = text_start.split('.')
-                row_start = int(parts_start[0]) - 1
-                col_start = int(parts_start[1]) // 6
+            first_row = first_item.row()
+            first_col = first_item.column()
 
-                index = row_start * self.ui.columns + col_start
-                frame = self.ui.num_rows * self.ui.columns
-                frames_num = index // frame
-                self.ui.current_frame = frames_num * frame
+            index = first_row * self.ui.columns + first_col - self.ui.shift_count
+            frame = self.ui.num_rows * self.ui.columns
+            frames_num = index // frame
+            self.ui.current_frame = frames_num * frame
 
-                if self.ui.current_frame > 0:
-                    self.ui.sel_start = int(index) - self.ui.current_frame
-                else:
-                    self.ui.sel_start = int(index)
+            if self.ui.current_frame > 0:
+                self.ui.sel_start = int(index) - self.ui.current_frame
+            else:
+                self.ui.sel_start = int(index)
 
-                self.ui.sel_end = self.ui.sel_start + selected_count - 1
+            self.ui.sel_end = self.ui.sel_start + selected_indexes_count - 1
 
-                self.ui.display_sel = True
+            self.ui.display_sel = True
 
-            self.draw_canvas(self.ui)
+            self.ui.value_btn_2d.setText(f"Value: 00000")
 
-    def on_button_press(self, event):
-        self.is_dragging = True
-        self.last_x = event.x
+        self.draw_canvas(self.ui)
 
-    def on_button_release(self, event):
-        self.is_dragging = False
+    def on_key_press_2d(self, event): # change later
+        pressed_key = event.key
 
-    def on_mouse_move(self, event):
-        if self.is_dragging:
-            delta_x = event.x - self.last_x
-            azim = self.ui.ax_3d.azim + delta_x
-            self.ui.ax_3d.view_init(elev=20, azim=azim % 360)
-            self.ui.canvas_3d.draw()
-            self.last_x = event.x
+        if pressed_key == "n":
+            self.value_changes_skipping(True)
+        if pressed_key == "v":
+            self.value_changes_skipping(False)
+        if pressed_key == "pageup":
+            self.next_page()
+        if pressed_key == "pagedown":
+            self.prev_page()
+
+    def value_changes_skipping(self, forward):
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+
+        found_value_index = None
+
+        selected_index = selected_indexes[0]
+
+        if not selected_indexes:
+            QMessageBox.warning(self.ui, "Warning", "Please select a number!")
+            return
+
+        row = selected_index.row()
+        col = selected_index.column()
+
+        index = (row * self.ui.columns) + col
+
+        if forward:
+            for i in range(index + 1, len(self.ui.current_values)):
+                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                    found_value_index = i
+                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                        found_value_index += 1
+                        i += 1
+                    break
+        else:
+            for i in range(index - 1, -1, -1):
+                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                    found_value_index = i
+                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                        found_value_index -= 1
+                        i -= 1
+                    found_value_index -= 1
+                    break
+
+        if found_value_index is None:
+            QMessageBox.warning(self.ui, "Warning", "No values found!")
+            return
+
+        self.ui.mode2d.highlight_text(found_value_index, True)
+        self.ui.mode2d.text_to_2d(self.ui)

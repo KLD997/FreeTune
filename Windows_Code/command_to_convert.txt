@@ -1,0 +1,1 @@
+pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cp313-win_amd64.pyd:.' --icon=icon.ico main.py

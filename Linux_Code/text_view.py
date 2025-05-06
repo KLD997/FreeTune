@@ -1,127 +1,193 @@
 import struct
-from tkinter import *
-import subprocess
-from tkinter import messagebox, simpledialog
 import os
+from PyQt6.QtWidgets import QMessageBox, QInputDialog, QFileDialog
+
 
 class TextView:
     def __init__(self, ui):
         self.ui = ui
 
-    def open_file(self, ui):
-        self.ui = ui
-        self.ui.open = True
-        self.ui.import_allow = True
-        self.display_text(self.ui)
+    def open_file(self):
+        file_path, selected_filter = QFileDialog.getOpenFileName(self.ui, "Open File")
+        if file_path:
+            self.ui.file_path = file_path
+        else:
+            return
 
-    def display_text(self, ui):
-        self.ui = ui
-        if self.ui.open:
-            result = subprocess.run(['zenity', '--file-selection'], capture_output=True, text=True)
-
-            if result.returncode == 0:
-                self.ui.file_path = result.stdout.strip()
-        self.ui.open = False
-        self.ui.update_counter = 0
         if self.ui.file_path:
             with open(self.ui.file_path, 'rb') as file:
-                self.ui.text_widget.delete(1.0, END)
                 content = file.read()
                 if self.ui.low_high:
                     self.ui.unpacked = struct.unpack('<' + 'H' * (len(content) // 2), content)
+                    self.ui.btn_lo_hi.setEnabled(False)
+                    self.ui.btn_hi_lo.setEnabled(True)
                 else:
                     self.ui.unpacked = struct.unpack('>' + 'H' * (len(content) // 2), content)
-                self.ui.new_values =self.ui.unpacked
-                self.ui.total_rows = len(self.ui.unpacked) // self.ui.columns
-                if (len(self.ui.unpacked) % self.ui.columns) != 0:
-                    self.ui.total_rows += 1
+                    self.ui.btn_lo_hi.setEnabled(True)
+                    self.ui.btn_hi_lo.setEnabled(False)
+                self.ui.current_values = self.ui.unpacked
+
+                self.ui.columns = 20
+                self.ui.shift_count = 0
+
+                self.ui.entry_col.setText(f"{self.ui.columns:02}")
+                self.ui.entry_shift.setText(f"{self.ui.shift_count:02}")
+
+                self.rows = [self.ui.unpacked[i:i + self.ui.columns] for i in
+                             range(0, len(self.ui.unpacked) - self.ui.columns, self.ui.columns)] # get values by rows
+
+                remaining_elements = len(self.ui.unpacked) % self.ui.columns # last row offset
+
+                if remaining_elements:
+                    last_row = list(self.ui.unpacked[-remaining_elements:]) + [None] * (
+                                self.ui.columns - remaining_elements) # last row values
+                    self.rows.append(last_row)
+
+                from ui import CustomTableView, QTableModel
+                CustomTableView(self.ui)
+                QTableModel(self.rows, self.ui)
+
+                self.ui.model.set_data(self.rows) # set values
+                self.ui.model.layoutChanged.emit() # update table view
+
+                self.set_column_width()
+                self.set_labels_y_axis()
+
+                # reset variables
                 self.ui.differences = []
                 self.ui.ori_values = []
-                self.ui.clean_up()
-                self.ui.map_list.delete(0, END)
+                self.ui.map_list.clear()
                 self.ui.map_list_counter = 0
-                self.show_all_data()
+                self.ui.start_index_maps = []
+                self.ui.end_index_maps = []
+                self.ui.maps_names = []
+
+                self.ui.maps.start_potential_map_search(False)
+
                 from Module_2D import Mode2D
                 self.mode2d = Mode2D(self)
                 self.mode2d.draw_canvas(self.ui)
 
-    def show_all_data(self):
-        self.ui.text_widget.delete(1.0, END)
-        for i in range(self.ui.total_rows):
-            row = self.ui.unpacked[i * self.ui.columns:(i + 1) * self.ui.columns]
-            formatted = ' '.join(f"{value:05}" for value in row)
-            self.ui.text_widget.insert(END, formatted + '\n')
-        self.ui.current_values = self.ui.text_widget.get(1.0, END).split()
-        new_values = self.ui.current_values[self.ui.shift_count:]
-        self.ui.current_values = new_values
+                self.ui.mode3d.set_default()
 
-        from maps import Maps_Utility
-        maps = Maps_Utility(self.ui)
-        maps.reapply_highlight_text()
+    def set_labels_y_axis(self):
+        labels = []
+        for i in range(self.ui.model.rowCount()):
+            value = (i * self.ui.model.columnCount()) * 2
+            value = f"{value:06X}"
+            labels.append(value)
+
+        self.ui.model.setVerticalHeaderLabels(labels) # set the vertical header
+
+    def set_column_width(self, width=60): # changes size of every column
+        for col in range(self.ui.columns):
+            self.ui.table_view.setColumnWidth(col, width)
+
+    def ask_change_display_mode(self, mode):
+        if not self.ui.file_path:
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        msg_box = QMessageBox(self.ui)
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        msg_box.setWindowTitle("Change Display Mode")
+        msg_box.setText("Do you really want to change the display mode?")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Yes)
+
+        response = msg_box.exec()
+
+        if response == QMessageBox.StandardButton.Yes:
+            self.change_display_mode(mode)
 
     def change_display_mode(self, mode):
-        answer = messagebox.askyesno("Change Display Mode", "Do you really want to change the display mode. This will remove any changes made!")
-        if answer:
-            if mode == "low_high":
-                self.ui.low_high = True
-            elif mode == "high_low":
-                self.ui.low_high = False
-            self.display_text(self.ui)
+        unpacked_byte_change = []
+
+        for value in self.ui.unpacked:
+            low = value & 0xFF
+            high = (value >> 8) & 0xFF
+            combined = (low * 256) + high
+            unpacked_byte_change.append(combined)
+
+        current_values_byte_change = []
+        for value in self.ui.current_values:
+            if value is None:
+                continue
+            low = value & 0xFF
+            high = (value >> 8) & 0xFF
+            combined = (low * 256) + high
+            current_values_byte_change.append(combined)
+
+        self.ui.unpacked = unpacked_byte_change
+        self.ui.current_values = current_values_byte_change
+
+        if mode == "low_high":
+            self.ui.low_high = True
+            self.ui.btn_lo_hi.setEnabled(False)
+            self.ui.btn_hi_lo.setEnabled(True)
+
+        elif mode == "high_low":
+            self.ui.low_high = False
+            self.ui.btn_lo_hi.setEnabled(True)
+            self.ui.btn_hi_lo.setEnabled(False)
+
+        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
+                range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+
+        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
+
+        if remaining_elements:
+            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
+                    self.ui.columns - remaining_elements)  # last row values
+            rows.append(last_row)
+
+        self.ui.model.set_data(rows)
+        self.ui.model.layoutChanged.emit()
+
+        self.set_labels_y_axis()
+        self.set_column_width()
 
     def save_file(self, file_name=None):
         if not self.ui.file_path:
-            messagebox.showwarning("Warning", "No file is currently open. Please open a file first.")
+            QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
             return
-        self.ui.current_values = self.ui.text_widget.get(1.0, END).split()
-        new_values = self.ui.current_values[self.ui.shift_count:]
-        self.ui.current_values = new_values
-        manufacturer = simpledialog.askstring("Input", "Enter Manufacturer:")
-        model = simpledialog.askstring("Input", "Enter Model:")
-        modification = simpledialog.askstring("Input", "Enter Modification:")
 
-        if not (manufacturer and model and modification):
-            messagebox.showwarning("Warning", "Manufacturer, Model, and Modification are required.")
+        values = self.ui.model.get_all_data()
+        current_values = []
+        for row in values:
+            for col in row:
+                if col is not None:
+                    current_values.append(col)
+
+        manufacturer, ok1 = QInputDialog.getText(self.ui, "Input", "Enter Manufacturer:")
+        model, ok2 = QInputDialog.getText(self.ui, "Input", "Enter Model:")
+        modification, ok3 = QInputDialog.getText(self.ui, "Input", "Enter Modification:")
+
+        if not (ok1 and ok2 and ok3 and manufacturer and model and modification):
+            QMessageBox.warning(self.ui, "Warning", "Manufacturer, Model, and Modification are required.")
             return
+
 
         if not file_name:
             file_name = f"LinOLS_{manufacturer}_{model}_{modification}.bin"
+            user_directory = os.path.expanduser("~")
+            file_name = os.path.join(user_directory, file_name)
 
         try:
-            initial_dir = os.path.expanduser('~')
-            file_path = self.linux_asksaveasfilename(initial_dir=initial_dir, defaultextension=".bin", initialfile=file_name)
+            file_path, selected_filter = QFileDialog.getSaveFileName(self.ui, "Save File", file_name, "Binary Files (*.bin);;All Files (*)")
 
             if not file_path:
-                messagebox.showinfo("Info", "File save canceled.")
+                QMessageBox.information(self.ui, "Info", "File save canceled.")
                 return
 
             if self.ui.low_high:
-                content_to_write = b''.join(struct.pack('<H', int(value)) for value in self.ui.current_values)
+                content_to_write = b''.join(struct.pack('<H', int(value)) for value in current_values)
             else:
-                content_to_write = b''.join(struct.pack('>H', int(value)) for value in self.ui.current_values)
+                content_to_write = b''.join(struct.pack('>H', int(value)) for value in current_values)
             with open(file_path, 'wb') as file:
                 file.write(content_to_write)
 
-            messagebox.showinfo("Success", f"File saved successfully at {file_path}.")
+            QMessageBox.information(self.ui, "Success", f"File saved successfully at {file_path}.")
         except Exception as e:
-            messagebox.showerror("Error", f"Error saving file: {e}")
-
-    def linux_asksaveasfilename(self, initial_dir="", defaultextension=".bin", filetypes=[("Binary Files", "*.bin")],
-                                initialfile=""):
-        try:
-            filter_string = ' '.join([f'--file-filter={ftype[0]} | {ftype[1]}' for ftype in filetypes])
-
-            command = ['zenity', '--file-selection', '--save', '--confirm-overwrite',
-                       '--filename=' + initialfile, '--file-filter=*.bin']
-
-            result = subprocess.run(command, capture_output=True, text=True)
-
-            if result.returncode == 0:
-                file_path = result.stdout.strip()
-                if not file_path.endswith(defaultextension):
-                    file_path += defaultextension
-                return file_path
-            else:
-                return None
-
-        except FileNotFoundError:
-            messagebox.showerror("Error", "You don't have zenity installed!")
+            QMessageBox.warning(self.ui, "Error", f"Error saving file: {e}")

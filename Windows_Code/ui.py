@@ -1,224 +1,740 @@
-from tkinter import *
-from tkinter import ttk
-from customtkinter import *
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import time
 
-class LinOLS:
-    def __init__(self, window):
+from PyQt6.QtCore import QAbstractTableModel, QModelIndex
+from PyQt6.QtWidgets import QMainWindow, QWidget, QTabWidget, QTableView, QHeaderView, QGridLayout, QPushButton, QFrame, \
+    QLabel, QLineEdit, QSizePolicy, QSpacerItem, QTableWidget, QListWidget, QVBoxLayout, QMenu, QMessageBox
+from PyQt6.QtGui import QAction, QGuiApplication, QColor, QKeyEvent, QKeySequence, QShortcut, QFont, QPalette, QIcon
+from PyQt6.QtCore import Qt, QPoint
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.pyplot as plt
+import os
+
+class LinOLS(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
         from text_view import TextView
         from Module_2D import Mode2D
-        from Utilities import Utility
-        from find_dialog import Find_Dialog
-        from File_Import import FileImport
-        from difference_dialog import DifferenceDialog
-        from value_dialog import ValueDialog
         from text_addons import TextAddons
         from Module_3D import Mode3D
         from maps import Maps_Utility
-        from value_dialog_3d import Value_Dialog_3D
-        from hex_address_dialog import HexAddressDialog
-        from map_properties_window import Map_properties
-        from x_axis_properties_window import x_axis_properties
-        from y_axis_properties_window import y_axis_properties
-        self.window = window
-        window.title("LinOLS")
+        from potential_maps.potential_maps import Potential_maps_manager
+        from custom_dialogs.dialog_handler import DialogManager
+        from canva_3d.canva_3d_window import TkWindowManager
 
-        screen_width = window.winfo_screenwidth()
-        screen_height = window.winfo_screenheight()
-        window.width = 1500
-        window.height = 600
+        self.setWindowTitle("LinOLS")
 
-        x = (screen_width / 2) - (window.width / 2)
-        y = (screen_height / 2) - (window.height / 2)
-        window.geometry(f"{window.width}x{window.height}+{int(x)}+{int(y)}")
+        self.logo_icon = QIcon("icon.ico")
+
+        self.setWindowIcon(self.logo_icon)
+
+        self.setMinimumWidth(1300)
+
+        screen = QGuiApplication.primaryScreen().geometry()
+        screen_width = screen.width()
+        screen_height = screen.height()
+
+        window_width = 1500
+        window_height = 600
+
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+
+        self.setGeometry(x, y, window_width, window_height)
 
         self.text_view_ = TextView(self)
         self.mode2d = Mode2D(self)
-        self.utility = Utility(self)
-        self.find_dialog = Find_Dialog(self)
-        self.file_import = FileImport(self)
-        self.diff_dialog = DifferenceDialog(self)
-        self.value_dial = ValueDialog(self)
         self.text_addons = TextAddons(self)
         self.mode3d = Mode3D(self)
         self.maps = Maps_Utility(self)
-        self.value_dialog_3d = Value_Dialog_3D(self)
-        self.hex_address_dial = HexAddressDialog(self)
-        self.map_properties = Map_properties(self)
-        self.x_axis_properties = x_axis_properties(self)
-        self.y_axis_properties = y_axis_properties(self)
+        self.potential_maps_manager = Potential_maps_manager(self)
+        self.dialog_manager = DialogManager(self)
+        self.tk_win_manager = TkWindowManager(self)
 
-        self.file_path = ""
-        self.columns = 20
-        self.num_rows = 55
-        self.unpacked = []
-        self.current_frame = 0
-        self.x = 0
-        self.percentage_num = 0
-        self.total_rows = 0
-        self.low_high = True
-        self.open = False
-        self.import_allow = False
-        self.current_values = []
-        self.found_values = []
-        self.found_values_counter = 0
-        self.new_path = ""
-        self.imported_values = []
-        self.differences = []
-        self.differences_color = []
-        self.ori_values = []
-        self.index_differences = []
-        self.start_time = 0
-        self.running = True
-        self.hold_time = 0.5
-        self.new_values = []
-        self.selected_count = 0
-        self.values = []
-        self.shift_count = 0
-        self.end_time = 0
-        self.edit_mode_active = False
-        self.display_sel = False
-        self.sel_start = 0
-        self.sel_end = 0
-        self.highlight_start = None
-        self.return_text = False
-        self.red_line = None
-        self.difference_index = -1
-        self.map_list_counter = 0
-        self.start_index_maps = []
-        self.end_index_maps = []
-        self.maps_names = []
-        self.signed_values = False
-        self.map_values = []
-        self.x_values = []
-        self.y_values = []
-        self.map_decimal = False
-        self.x_axis_decimal = False
-        self.y_axis_decimal = False
-        self.new_width = 0
+        '''General variables'''
+        self.file_path = "" # file path of the loaded file
+        self.columns = 20 # num of columns
+        self.num_rows = 55 # num of rows for 2d
+        self.unpacked = [] # all original numbers
+        self.low_high = True  # low_high or high_low
+        self.current_values = []  # current values in text and 2d view
 
-        window.iconbitmap('icon.ico')
+        '''Text view variables'''
+        self.return_text = False # used for returning to previous value
+        self.tab1_selected = True # true when tab1 is selected
 
-        window.config(bg="#333")
+        '''2d variables'''
+        self.current_frame = 0 # current 2d frame
+        self.percentage_num = 0 # percentage number in 2d
+        self.display_sel = False # flag to control whether selection should be displayed in 2d
+        self.sel_start = 0 # start of the selection
+        self.sel_end = 0 # end of selection
+        self.red_line = None  # a red line in 2d
+        self.num_rows = 55 # number of rows displayed in 2d
+        self.sync_2d_scroll = False # sync 2d to text
 
-        window.option_add("*Font", "Nimbus_Sans 9")
+        '''Find dialog variables'''
+        self.found_valuesx_values = [] # all found values
+        self.found_values_counter = 0 # how many values where found
 
-        self.notebook = ttk.Notebook(window)
-        style = ttk.Style()
-        style.theme_use('default')
-        style.configure("TNotebook", background="#333")
-        style.configure("TNotebook.Tab", background="#333", foreground="white")
-        style.map("TNotebook.Tab", background=[('selected', '#555')])
-        self.notebook.pack(fill=BOTH, expand=YES, padx=10, pady=10)
+        '''Difference dialog variables'''
+        self.differences = [] # all differences
+        self.differences_color = [] # color of all differences
+        self.ori_values = [] # all ori values for differences
+        self.index_differences = [] # indexes of all differences
+
+        '''Shift variables'''
+        self.start_time = 0 # start time for shifting values
+        self.values = [] # values for shift in text view
+        self.shift_count = 0 # count of shift
+        self.end_time = 0 # end time for shifting
+
+        '''Maps variables'''
+        self.map_list_counter = 0  # number of maps
+        self.start_index_maps = []  # start indexes for created/imported maps
+        self.end_index_maps = []  # end indexes for created/imported maps
+        self.maps_names = []  # all map names for created/imported maps
+        self.signed_values = False  # 3d signed values
+        self.map_decimal = False  # do map values in 3d have decimal numbers
+        self.x_axis_decimal = False  # do x-axis values have a decimal numbers
+        self.y_axis_decimal = False  # do y-axis values have a decimal numbers
+
+        '''3D variables'''
+        self.num_rows_3d = 15
+        self.num_columns_3d = 20
+        self.column_width_3d = 55
+        self.map_opened = False
+
+        self.original = []
+        self.original_x = []
+        self.original_y = []
+
+        for i in range(self.num_rows_3d):
+            row = []
+            self.original_y.append(i + 1)
+            for x in range(self.num_columns_3d):
+                row.append(0)
+            self.original.append(row)
+
+        for i in range(self.num_columns_3d):
+            self.original_x.append(i + 1)
+
+        self.x_values = []  # current 3d x-axis values
+        self.y_values = []  # current 3d y-axis values
+        self.map_values = []  # current 3d map values
+
+        self.new_width = 0  # new width of entry boxes in 3d
+
+        self.focused_3d_tab = False
+
+        '''Potential maps variables'''
+        self.potential_maps_start = [] # all potential maps start indexes
+        self.potential_maps_end = [] # all potential maps end indexes
+        self.potential_maps_names = [] # all potential maps names
+
+        self.potential_map_added = False # for checking if potential map has been added successfully
+        self.potential_map_index = None
+
+        '''Custom Dialogs'''
+        self.dialog_terminate = True
+
+        self.setStyleSheet("background-color: #333;")
 
         self.setup_ui()
 
     def setup_ui(self):
-        tab1 = Frame(self.notebook, bg="#333")
-        self.notebook.add(tab1, text=" Text ")
+        self.create_menu_bar()
 
-        text_frame = Frame(tab1, bg="#333")
-        text_frame.grid(row=0, column=0, padx=5, pady=5, sticky=NSEW)
+        self.tabs = QTabWidget(self)
+        self.setCentralWidget(self.tabs)
 
-        self.text_widget = Text(text_frame, bg="#333333", bd=0, highlightthickness=0, fg="white", font=("Courier New", 9))
-        self.text_widget.pack(side=LEFT, fill=BOTH, expand=True)
-        self.text_widget.configure(insertbackground='white', undo=True)
+        self.tabs.currentChanged.connect(self.text_addons.on_tab_changed)
 
-        self.scroll_bar = CTkScrollbar(text_frame, command=self.text_widget.yview, fg_color="#333")
-        self.scroll_bar.pack(side=RIGHT, fill=Y)
+        self.tab1 = QWidget()
+        self.tab1.setStyleSheet("border: 0;")
+        self.tab2 = QWidget()
+        self.tab2.setStyleSheet("border: 0;")
+        self.tab3 = QWidget()
+        self.tab4 = QWidget()
 
-        self.text_widget.config(yscrollcommand=self.scroll_bar.set)
+        self.tabs.addTab(self.tab1, "Text")
+        self.tabs.addTab(self.tab2, "2D")
+        self.tabs.addTab(self.tab3, "3D")
+        self.tabs.addTab(self.tab4, "Maps")
 
-        self.hex_address_menu = Menu(tab1, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        self.hex_address_menu.add_command(label="Copy Hex Address", command=self.text_addons.copy_hex_address)
-        self.hex_address_menu.add_command(label="Open Map", command=self.maps.open_map_right_click)
+        self.setup_tab1()
+        self.setup_tab2()
+        self.setup_tab3()
+        self.setup_tab4()
 
-        self.text_widget.bind("<Button-3>", self.text_addons.show_hex_address_menu)
+        self.create_shortcut(self.tab1, "Ctrl+F")
+        self.create_shortcut(self.tab2, "Ctrl+F")
 
-        center_frame = CTkFrame(tab1, fg_color="#333")
-        center_frame.grid(row=1, column=0, pady=5)
+        self.create_shortcut(self.tab1, "Ctrl+G")
+        self.create_shortcut(self.tab2, "Ctrl+G")
 
-        buttons_frame = CTkFrame(tab1, fg_color="#333")
-        buttons_frame.grid(row=1, column=0, padx=5, pady=5, sticky=W)
+        self.create_shortcut(self.tab1, "Shift+5")
 
-        dec16_low_high = CTkButton(buttons_frame, text="16-bit Lo-Hi", width=6, hover_color="#555", fg_color="#444",
-                                   text_color="white", command=lambda: self.text_view_.change_display_mode("low_high"))
-        dec16_low_high.grid(row=0, column=0, padx=5, sticky="w")
+        self.create_shortcut(self.tab1, "w")
+        self.create_shortcut(self.tab1, "m")
 
-        dec16_high_low = CTkButton(buttons_frame, text="16-bit Hi-Lo", width=6, hover_color="#555", fg_color="#444",
-                                   text_color="white", command=lambda: self.text_view_.change_display_mode("high_low"))
-        dec16_high_low.grid(row=0, column=1, padx=5)
+        self.create_shortcut(self.tab1, "k")
 
-        add_map_btn = CTkButton(buttons_frame, text="Add Map", width=6, hover_color="#555", fg_color="#444",
-                                text_color="white", command=self.maps.add_map)
-        add_map_btn.grid(row=0, column=2, padx=5)
+        self.clean_up()
 
-        button_2d = CTkButton(buttons_frame, text="Text to 2D", hover_color="#555", width=6,
-                              command=lambda: self.mode2d.text_to_2d(self), fg_color="#444", text_color="white")
-        button_2d.grid(row=0, column=3, padx=5)
+    def create_shortcut(self, tab, key_sequence):
+        shortcut = QShortcut(QKeySequence(key_sequence), tab)
+        shortcut.activated.connect(lambda: self.on_shortcut_activated(key_sequence))
 
-        self.selected_count_label = CTkButton(center_frame, text="Selected: 0", width=100, hover_color="#555",
-                                              fg_color="#444", text_color="white")
-        self.selected_count_label.grid(row=0, column=0, padx=10)
+    def on_shortcut_activated(self, key_sequence):
+        if key_sequence == "Ctrl+F":
+            self.text_addons.open_find_dialog()
+        elif key_sequence == "Ctrl+G":
+            self.text_addons.open_hex_address_dialog()
+        elif key_sequence == "Shift+5":
+            self.text_addons.open_value_dialog()
+        elif key_sequence == "w":
+            self.text_addons.adjust_columns("-")
+        elif key_sequence == "m":
+            self.text_addons.adjust_columns("+")
+        elif key_sequence == "k":
+            self.maps.add_map()
 
-        '''COLUMNS FRAME'''
-        columns_frame = CTkFrame(center_frame, border_color="#555", border_width=1, fg_color="#333")
-        columns_frame.grid(row=0, column=1, padx=5)
+    def setup_tab1(self):
+        main_layout = QGridLayout()
 
-        label_col = CTkLabel(columns_frame, text="Col:", width=3, height=2, fg_color="#333", text_color="white")
-        label_col.grid(row=0, column=0, padx=5, pady=3)
+        self.table_view = CustomTableView(self)
+        main_layout.addWidget(self.table_view, 0, 0)
 
-        self.entry = CTkEntry(columns_frame, fg_color="#555", text_color="white", width=28)
-        self.entry.grid(row=0, column=1, padx=5, pady=3)
-        self.entry.insert(END, str(self.columns))
+        font = QFont("Cantarell", 11)
+        self.table_view.setFont(font)
 
-        apply_columns = CTkButton(columns_frame, text="Apply", width=6, hover_color="#555",
-                                  command=lambda: self.utility.adjust_columns(self), fg_color="#444",
-                                  text_color="white")
-        apply_columns.grid(row=0, column=2, padx=5, pady=3)
+        self.table_view.setStyleSheet("""
+            QTableView {
+                background-color: #333;
+            }
+            QTableView::item:selected {
+                background-color: #5b9bf8;
+                color: white;
+            }
+            QHeaderView::section {
+                background-color: #363636;
+                color: white;
+            } 
+        """)
 
-        '''SHIFT FRAME'''
-        shift_frame = CTkFrame(center_frame, border_color="#555", border_width=1, fg_color="#333")
-        shift_frame.grid(row=0, column=2, padx=5)
+        self.model = QTableModel(self.unpacked, self)
+        self.table_view.setModel(self.model)
 
-        label_shift = CTkLabel(shift_frame, text="Shift:", width=3, height=2, fg_color="#333", text_color="white")
-        label_shift.grid(row=0, column=0, padx=5, pady=3)
+        self.table_view.horizontalHeader().setVisible(False)
 
-        self.entry_position = CTkEntry(shift_frame, fg_color="#555", text_color="white", width=28)
-        self.entry_position.grid(row=0, column=1, padx=5, pady=3)
-        self.entry_position.insert(0, "00")
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
 
-        apply_position = CTkButton(shift_frame, text="Apply", width=6, hover_color="#555", fg_color="#444",
-                                   text_color="white", command=lambda: self.utility.move_items(self))
-        apply_position.grid(row=0, column=2, padx=5, pady=3)
+        self.table_view.verticalHeader().setFixedWidth(60) # change width of x-axis
 
-        self.ori_value_label = CTkButton(center_frame, text="Ori: 00000", width=100, hover_color="#555",
-                                         fg_color="#444", text_color="white")
-        self.ori_value_label.grid(row=0, column=3, padx=10)
+        left_grid_layout = QGridLayout()
 
-        '''EDIT BUTTONS'''
-        edit_buttons = CTkFrame(tab1, fg_color="#333")
-        edit_buttons.grid(row=1, column=0, padx=5, pady=5, sticky=E)
+        left_grid_layout.setContentsMargins(0, 0, 0, 0)
+        left_grid_layout.setHorizontalSpacing(10)
+        left_grid_layout.setVerticalSpacing(10)
 
-        copy_button = CTkButton(edit_buttons, text="Copy", hover_color="#555", width=6,
-                                command=self.utility.copy_values, fg_color="#444", text_color="white")
-        copy_button.grid(row=0, column=1, padx=5, sticky=E)
+        mid_grid_layout = QGridLayout()
 
-        paste_button = CTkButton(edit_buttons, text="Paste", hover_color="#555", width=6,
-                                 command=lambda: self.utility.paste_values(self), fg_color="#444", text_color="white")
-        paste_button.grid(row=0, column=2, padx=5, sticky=E)
+        mid_grid_layout.setSpacing(0)
 
-        undo = CTkButton(edit_buttons, text="Undo", hover_color="#555", width=6, command=self.utility.undo,
-                         fg_color="#444", text_color="white")
-        undo.grid(row=0, column=3, padx=5, sticky=E)
+        mid_grid_layout.setContentsMargins(0, 0, 0, 0)
+        mid_grid_layout.setHorizontalSpacing(0)
+        mid_grid_layout.setVerticalSpacing(10)
 
-        redo = CTkButton(edit_buttons, text="Redo", hover_color="#555", width=6, command=self.utility.redo,
-                         fg_color="#444", text_color="white")
-        redo.grid(row=0, column=4, padx=5, sticky=E)
+        right_grid_layout = QGridLayout()
 
-        tab2 = Frame(self.notebook, bg="#333")
-        self.notebook.add(tab2, text=" 2D ")
+        right_grid_layout.setContentsMargins(0, 0, 0, 0)
+        right_grid_layout.setHorizontalSpacing(10)
+        right_grid_layout.setVerticalSpacing(10)
+
+        button_style = """
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 65px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        QPushButton:disabled {
+            background-color: #555;
+            color: #aaa;
+        }
+        """
+
+        self.btn_lo_hi = QPushButton("16-bit Lo-Hi", self)
+        self.btn_lo_hi.clicked.connect(lambda: self.text_view_.ask_change_display_mode("low_high"))
+        self.btn_lo_hi.setStyleSheet(button_style)
+
+        self.btn_hi_lo = QPushButton("16-bit Hi-Lo", self)
+        self.btn_hi_lo.clicked.connect(lambda: self.text_view_.ask_change_display_mode("high_low"))
+        self.btn_hi_lo.setStyleSheet(button_style)
+
+        btn2 = QPushButton("Add Map", self)
+        btn2.setStyleSheet(button_style)
+        btn2.clicked.connect(self.maps.add_map)
+
+        btn3 = QPushButton("Text to 2D", self)
+        btn3.setStyleSheet(button_style)
+        btn3.clicked.connect(lambda: self.mode2d.text_to_2d(self))
+
+        self.sel_btn = QPushButton("Selected: 0", self)
+        self.sel_btn.setStyleSheet("""
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 65px;
+            margin-right: 10px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """)
+
+        frame_col = QFrame(self)
+        frame_col.setFrameShape(QFrame.Shape.StyledPanel)
+        frame_col.setFrameShadow(QFrame.Shadow.Raised)
+        frame_col.setStyleSheet("""
+            border: 2px solid #888;
+            border-radius: 5px;
+        """)
+
+        frame_col.setFixedHeight(35)
+        frame_col.setFixedWidth(140)
+
+        label_col = QLabel("Width:", self)
+        label_col.setStyleSheet("""
+            border: 0;
+            color: white;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background: transparent;
+            margin-left: 5px;
+        """)
+
+        self.entry_col = QLineEdit(f"{self.columns:02}", self)
+        self.entry_col.setStyleSheet("""
+            border: 2px;
+            border-radius: 5px;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background-color: #555;
+            height: 25px;
+            width: 28px;
+            margin-left: 50px;                    
+        """)
+
+        self.entry_col.setReadOnly(True)
+
+        self.entry_col.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.entry_col.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_col_plus = QPushButton("+", self)
+        btn_col_plus.setStyleSheet("""
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 10px;
+            margin-left: 8px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """)
+        btn_col_plus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_col_plus.clicked.connect(lambda: self.text_addons.adjust_columns("+"))
+
+        btn_col_minus = QPushButton("-", self)
+        btn_col_minus.setStyleSheet("""
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 10px;
+            margin-left: 5px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """)
+        btn_col_minus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_col_minus.clicked.connect(lambda: self.text_addons.adjust_columns("-"))
+
+        frame_shift = QFrame(self)
+        frame_shift.setFrameShape(QFrame.Shape.StyledPanel)
+        frame_shift.setFrameShadow(QFrame.Shadow.Raised)
+        frame_shift.setStyleSheet("""
+            border: 2px solid #888;
+            border-radius: 5px;
+        """)
+
+        frame_shift.setFixedHeight(35)
+        frame_shift.setFixedWidth(140)
+
+        label_shift = QLabel("Shift:", self)
+        label_shift.setStyleSheet("""
+            border: 0;
+            color: white;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background: transparent;
+            margin-left: 5px;
+        """)
+
+        self.entry_shift = QLineEdit(f"{self.shift_count:02}", self)
+        self.entry_shift.setStyleSheet("""
+            border: 2px;
+            border-radius: 5px;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background-color: #555;
+            height: 25px;
+            width: 28px;
+            margin-left: 50px;
+        """)
+
+        self.entry_shift.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.entry_shift.setReadOnly(True)
+
+        self.entry_shift.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_shift_plus = QPushButton("+", self)
+        btn_shift_plus.setStyleSheet("""
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 10px;
+            margin-left: 8px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """)
+        btn_shift_plus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_shift_plus.clicked.connect(lambda: self.text_addons.shift_values("+"))
+
+        btn_shift_minus = QPushButton("-", self)
+        btn_shift_minus.setStyleSheet("""
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 10px;
+            margin-left: 5px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """)
+        btn_shift_minus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_shift_minus.clicked.connect(lambda: self.text_addons.shift_values("-"))
+
+        self.value_btn = QPushButton("Ori: 00000", self)
+        self.value_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #444;
+                    color: white;
+                    font-family: 'Roboto', sans-serif;
+                    font-size: 12px;
+                    font-weight: 650;
+                    padding: 6px;
+                    border: none;
+                    border-radius: 5px;
+                    min-width: 65px;
+                    margin-left: 10px;
+                }
+                QPushButton:hover {
+                    background-color: #666;
+                    color: #fff;
+                }
+                QPushButton:pressed{
+                    background-color: #444;
+                    color: white;
+                }
+                """)
+
+        copy_btn = QPushButton("Copy", self)
+        copy_btn.setStyleSheet(button_style)
+        copy_btn.clicked.connect(lambda: self.text_addons.copy_values(False))
+
+        paste_btn = QPushButton("Paste", self)
+        paste_btn.setStyleSheet(button_style)
+        paste_btn.clicked.connect(self.text_addons.paste_values)
+
+        btn12 = QPushButton("Undo", self)
+        btn12.setStyleSheet(button_style)
+        btn12.clicked.connect(self.model.undo_changes)
+
+        btn13 = QPushButton("Redo", self)
+        btn13.setStyleSheet(button_style)
+        btn13.clicked.connect(self.model.redo_changes)
+
+        spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        left_grid_layout.addWidget(self.btn_lo_hi, 0, 0)
+        left_grid_layout.addWidget(self.btn_hi_lo, 0, 1)
+        left_grid_layout.addWidget(btn2, 0, 2)
+        left_grid_layout.addWidget(btn3, 0, 3)
+
+        mid_grid_layout.addWidget(self.sel_btn, 0, 0)
+
+        mid_grid_layout.addWidget(frame_col, 0, 1, 1, 4)
+        mid_grid_layout.addWidget(label_col, 0, 1)
+        mid_grid_layout.addWidget(self.entry_col, 0, 1)
+        mid_grid_layout.addWidget(btn_col_plus, 0, 2)
+        mid_grid_layout.addWidget(btn_col_minus, 0, 3)
+
+        mid_grid_layout.addItem(spacer, 0, 5)
+
+        mid_grid_layout.addWidget(frame_shift, 0, 6, 1, 4)
+        mid_grid_layout.addWidget(label_shift, 0, 6)
+        mid_grid_layout.addWidget(self.entry_shift, 0, 6)
+        mid_grid_layout.addWidget(btn_shift_plus, 0, 7)
+        mid_grid_layout.addWidget(btn_shift_minus, 0, 8)
+
+        mid_grid_layout.addWidget(self.value_btn, 0, 10)
+
+        right_grid_layout.addWidget(copy_btn, 0, 0)
+        right_grid_layout.addWidget(paste_btn, 0, 1)
+        right_grid_layout.addWidget(btn12, 0, 2)
+        right_grid_layout.addWidget(btn13, 0, 3)
+
+        main_layout.addWidget(self.table_view, 0, 0, 1, 2)
+        main_layout.addLayout(left_grid_layout, 1, 0, 1, 2)
+        main_layout.addLayout(mid_grid_layout, 1, 0, 1, 2)
+        main_layout.addLayout(right_grid_layout, 1, 0, 1, 2)
+
+        left_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
+        mid_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter)
+        right_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+
+        self.tab1.setLayout(main_layout)
+
+    def setup_tab2(self):
+        main_layout = QGridLayout()
+
+        left_grid_layout = QGridLayout()
+
+        left_grid_layout.setContentsMargins(0, 0, 0, 0)
+        left_grid_layout.setHorizontalSpacing(10)
+        left_grid_layout.setVerticalSpacing(10)
+
+        mid_grid_layout = QGridLayout()
+
+        mid_grid_layout.setContentsMargins(0, 0, 0, 0)
+        mid_grid_layout.setHorizontalSpacing(10)
+        mid_grid_layout.setVerticalSpacing(10)
+
+        right_grid_layout = QGridLayout()
+
+        mid_grid_layout.setContentsMargins(0, 0, 0, 0)
+        mid_grid_layout.setHorizontalSpacing(10)
+        mid_grid_layout.setVerticalSpacing(10)
+
+        button_style = """
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 50px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """
+
+        outside_button_style = """
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;                    
+            border: none;
+            border-radius: 5px;
+            min-width: 75px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """
+
+        operation_style = """
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;                    
+            border: none;
+            border-radius: 5px;
+            min-width: 10px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """
+
+        btn_left = QPushButton("<", self.tab2)
+        btn_left.setStyleSheet(button_style)
+        btn_left.clicked.connect(self.mode2d.prev_page)
+
+        btn_fast_left = QPushButton("<<", self.tab2)
+        btn_fast_left.setStyleSheet(button_style)
+        btn_fast_left.clicked.connect(lambda: self.mode2d.fast_movement("left"))
+
+        btn_1 = QPushButton("Find Dialog", self.tab2)
+        btn_1.setStyleSheet(outside_button_style)
+        btn_1.clicked.connect(self.text_addons.open_find_dialog)
+
+        btn_percentage_1 = QPushButton("%", self.tab2)
+        btn_percentage_1.setStyleSheet(operation_style)
+        btn_percentage_1.clicked.connect(lambda: self.mode2d.percentage(True, ""))
+        btn_percentage_1.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_minus = QPushButton("-", self.tab2)
+        btn_minus.setStyleSheet(operation_style)
+        btn_minus.clicked.connect(lambda: self.mode2d.percentage(False, "-"))
+        btn_minus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.entry_percentage = QLineEdit("00", self.tab2)
+        self.entry_percentage.setStyleSheet("""
+            border: 2px;
+            border-radius: 6px;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 680;
+            background-color: #555;
+            height: 25px;
+            width: 25px;
+        """)
+
+        self.entry_percentage.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.entry_percentage.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_plus = QPushButton("+", self.tab2)
+        btn_plus.setStyleSheet(operation_style)
+        btn_plus.clicked.connect(lambda: self.mode2d.percentage(False, "+"))
+        btn_plus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        btn_percentage_2 = QPushButton("%", self.tab2)
+        btn_percentage_2.setStyleSheet(operation_style)
+        btn_percentage_2.clicked.connect(lambda: self.mode2d.percentage(True, ""))
+        btn_percentage_2.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.value_btn_2d = QPushButton("Value: 00000", self.tab2)
+        self.value_btn_2d.setStyleSheet(outside_button_style)
+
+        btn_fast_right = QPushButton(">>", self.tab2)
+        btn_fast_right.setStyleSheet(button_style)
+        btn_fast_right.clicked.connect(lambda: self.mode2d.fast_movement("right"))
+
+        btn_right = QPushButton(">", self.tab2)
+        btn_right.setStyleSheet(button_style)
+        btn_right.clicked.connect(self.mode2d.next_page)
 
         self.fig, self.ax = plt.subplots(figsize=(8, 6), dpi=100)
 
@@ -229,356 +745,689 @@ class LinOLS:
 
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-        self.canvas = FigureCanvasTkAgg(self.fig, master=tab2)
-        self.canvas.get_tk_widget().grid(row=0, column=0, rowspan=1, padx=0, pady=0, sticky='nsew')
+        self.canvas = FigureCanvas(self.fig)
 
-        self.canvas.get_tk_widget().config(highlightthickness=0)
+        self.canvas.setStyleSheet("border: 0;")
 
-        self.canvas.mpl_connect("button_press_event", self.mode2d.on_canvas_click)
+        self.canvas.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
-        self.canvas.mpl_connect("key_press_event", self.utility.on_key_press_2d)
+        self.canvas.mpl_connect("button_press_event", self.mode2d.on_canvas_click)  # change later
+        self.canvas.mpl_connect("key_press_event", self.mode2d.on_key_press_2d)  # change later
 
-        tab2.grid_rowconfigure(0, weight=1)
-        tab2.grid_columnconfigure(0, weight=1)
+        left_grid_layout.addWidget(btn_left, 0, 0)
+        left_grid_layout.addWidget(btn_fast_left, 0, 1)
 
-        navigation_buttons_frame = CTkFrame(tab2, fg_color="#333")
-        navigation_buttons_frame.grid(row=1, column=0, columnspan=6, pady=5, sticky=W)
+        mid_grid_layout.addWidget(btn_1, 0, 0)
 
-        update_frame = CTkFrame(tab2, fg_color="#333")
-        update_frame.grid(row=1, column=0, padx=5)
+        spacer = QSpacerItem(25, 1, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-        center_frame_2d_spacing = CTkFrame(tab2, fg_color="#333")
-        center_frame_2d_spacing.grid(row=1, column=0, padx=5, pady=5)
+        mid_grid_layout.addItem(spacer, 0, 1)
 
-        center_frame_2d = CTkFrame(tab2, fg_color="#333")
-        center_frame_2d.grid(row=1, column=0, padx=5, pady=5)
+        mid_grid_layout.addWidget(btn_percentage_1, 0, 2)
+        mid_grid_layout.addWidget(btn_minus, 0, 3)
+        mid_grid_layout.addWidget(self.entry_percentage, 0, 4)
+        mid_grid_layout.addWidget(btn_plus, 0, 5)
+        mid_grid_layout.addWidget(btn_percentage_2, 0, 6)
 
-        right_frame_2d = CTkFrame(tab2, fg_color="#333")
-        right_frame_2d.grid(row=1, column=0, padx=5, pady=5, sticky=E)
+        mid_grid_layout.addItem(spacer, 0, 7)
 
-        prev_button = CTkButton(navigation_buttons_frame, text="<", hover_color="#555", width=60,
-                                command=self.mode2d.prev_page, fg_color="#444", text_color="white")
-        prev_button.grid(row=0, column=0, padx=5)
-
-        fast_backwards_button = CTkButton(navigation_buttons_frame, text="<<", hover_color="#555", width=60,
-                                          command=lambda: self.mode2d.fast_movement("left"), fg_color="#444",
-                                          text_color="white")
-        fast_backwards_button.grid(row=0, column=1, padx=5)
-
-        next_button = CTkButton(right_frame_2d, text=">", hover_color="#555", width=60, command=self.mode2d.next_page,
-                                fg_color="#444", text_color="white")
-        next_button.grid(row=0, column=1, padx=5)
-
-        fast_forward_button = CTkButton(right_frame_2d, text=">>", hover_color="#555", width=60,
-                                        command=lambda: self.mode2d.fast_movement("right"), fg_color="#444",
-                                        text_color="white")
-        fast_forward_button.grid(row=0, column=0, padx=5)
+        mid_grid_layout.addWidget(self.value_btn_2d, 0, 8)
 
-        load_and_update_button = CTkButton(update_frame, text="Update", hover_color="#555", width=100,
-                                           command=lambda: self.mode2d.update_2d(self), fg_color="#444",
-                                           text_color="white")
-        load_and_update_button.grid(row=0, column=0, padx=148)
-
-        self.text_value = CTkButton(update_frame, text="Value: 00000", hover_color="#555", width=100, fg_color="#444",
-                                    text_color="white")
-        self.text_value.grid(row=0, column=2, padx=150)
-
-        update_percentage = CTkButton(center_frame_2d_spacing, text="%", hover_color="#555", width=6,
-                                      command=lambda: self.mode2d.percentage(True, "set"), fg_color="#444",
-                                      text_color="white")
-        update_percentage.grid(row=0, column=0, padx=58)
-
-        update_percentage_1 = CTkButton(center_frame_2d_spacing, text="%", hover_color="#555", width=6,
-                                        command=lambda: self.mode2d.percentage(True, "set"), fg_color="#444",
-                                        text_color="white")
-        update_percentage_1.grid(row=0, column=1, padx=60)
-
-        percent_minus = CTkButton(center_frame_2d, text="-", width=3, hover_color="#555",
-                                  command=lambda: self.mode2d.percentage(False, "minus"), fg_color="#444",
-                                  text_color="white")
-        percent_minus.grid(row=0, column=0, padx=5)
-
-        self.percentage_entry = CTkEntry(center_frame_2d, width=28, fg_color="#555", text_color="white")
-        self.percentage_entry.grid(row=0, column=1, padx=5)
-        self.percentage_entry.insert(END, "00")
-
-        percent_plus = CTkButton(center_frame_2d, text="+", width=3, hover_color="#555",
-                                 command=lambda: self.mode2d.percentage(False, "plus"), fg_color="#444",
-                                 text_color="white")
-        percent_plus.grid(row=0, column=2, padx=5)
-
-        tab1.grid_rowconfigure(0, weight=1)
-        tab1.grid_columnconfigure(0, weight=1)
-
-        tab3 = Frame(self.notebook, bg="#333")
-        self.notebook.add(tab3, text=" 3D ")
-
-        tab3.grid_rowconfigure(0, weight=1)
-        tab3.grid_columnconfigure(0, weight=1)
-
-        self.boxes = Frame(tab3, bg="#333")
-        self.boxes.grid(row=0, column=0, padx=10, pady=10, sticky='nw')
-
-        sign_btn = CTkButton(self.boxes, text="Sign", fg_color="#444", text_color="white", hover_color="#555", width=10,
-                             command=self.maps.sign_values)
-        sign_btn.grid(row=0, column=0)
-
-        self.main_frame = Frame(self.boxes, bg="#333")
-        self.main_frame.grid(row=1, column=1, padx=10, sticky='nw')
-
-        self.x_frame = Frame(self.boxes, bg="#333")
-        self.x_frame.grid(row=0, column=1, padx=10, pady=8, sticky='nw')
-
-        self.y_frame = Frame(self.boxes, bg="#333")
-        self.y_frame.grid(row=1, column=0, sticky='nw')
-
-        self.right_frame_3d = Frame(tab3, bg="#333")
-        self.right_frame_3d.grid(row=0, column=1, padx=10, pady=10, sticky='nsew')
-
-        self.right_frame_3d.grid_rowconfigure(0, weight=1)
-        self.right_frame_3d.grid_columnconfigure(0, weight=1)
-
-        self.columns_3d = 10
-        self.rows_3d = 10
-
-        self.entry_x_widgets = []
-        self.original_X = []
-        row_x = []
-        original_row_x = []
-        for x in range(self.columns_3d):
-            entry = Entry(self.x_frame, width=5, font=("Roboto", 10))
-            entry.grid(row=0, column=x)
-            entry.insert(END, "00000")
-            entry.bind('<KeyRelease>', lambda event, j=x: self.mode3d.check_difference_x(event, j))
-            entry.bind("<FocusOut>", lambda event, j=x: (self.mode3d.on_focus_out(event, 0, j, "x")))
-            entry.bind("<ButtonPress-1>", lambda event, j=x: self.mode3d.start_interaction_x(event, j))
-            entry.bind("<B1-Motion>", self.mode3d.drag_to_select)
-            entry.bind("<ButtonRelease-1>", self.mode3d.end_interaction)
-            entry.bind("<Control-a>", lambda event, j=x: self.mode3d.select_all(event, 0, j, "x"))
-            entry.bind("<Tab>", self.mode3d.clear_highlight_on_tab)
-            entry.bind("<Button-3>", self.x_axis_properties.show_context_menu)
-            row_x.append(entry)
-            original_row_x.append("00000")
-        self.entry_x_widgets.append(row_x)
-        self.original_X.append(original_row_x)
-
-        self.right_click_map_menu = Menu(tab3, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        self.right_click_map_menu.add_command(label="Map Properties", command=self.map_properties.map_properties_dialog)
-
-        self.right_click_x_axis = Menu(tab3, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        self.right_click_x_axis.add_command(label="X-Axis Properties",
-                                            command=self.x_axis_properties.x_axis_properties_dialog)
-
-        self.right_click_y_axis = Menu(tab3, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        self.right_click_y_axis.add_command(label="Y-Axis Properties",
-                                            command=self.y_axis_properties.y_axis_properties_dialog)
-
-        self.entry_widgets = []
-        self.original = []
-        for k in range(self.rows_3d):
-            row = []
-            original_row = []
-            for x in range(self.columns_3d):
-                entry = Entry(self.main_frame, width=5, font=("Roboto", 10))
-                entry.grid(row=k, column=x)
-                entry.insert(END, "00000")
-                entry.bind('<KeyRelease>',
-                           lambda event, i=k, j=x: (
-                           self.mode3d.check_difference(event, i, j), self.mode3d.check_difference_3d(i, j)))
-                entry.bind("<FocusOut>", lambda event, i=k, j=x: (self.mode3d.on_focus_out(event, i, j, "map")))
-                entry.bind("<ButtonPress-1>", lambda event, i=k, j=x: (
-                    self.mode3d.start_interaction(event, i, j), self.mode3d.check_difference_3d(i, j)))
-                entry.bind("<B1-Motion>", self.mode3d.drag_to_select)
-                entry.bind("<ButtonRelease-1>", self.mode3d.end_interaction)
-                entry.bind("<Control-a>", lambda event, i=k, j=x: self.mode3d.select_all(event, i, j, "map"))
-                entry.bind("<Tab>", self.mode3d.clear_highlight_on_tab)
-                entry.bind("<Button-3>", self.map_properties.show_context_menu)
-                row.append(entry)
-                original_row.append("00000")
-            self.entry_widgets.append(row)
-            self.original.append(original_row)
-
-        self.entry_y_widgets = []
-        self.original_Y = []
-        for x in range(self.rows_3d):
-            entry = Entry(self.y_frame, width=5, font=("Roboto", 10))
-            entry.grid(row=x, column=0)
-            entry.insert(END, "00000")
-            entry.bind('<KeyRelease>', lambda event, i=x: self.mode3d.check_difference_y(event, i))
-            entry.bind("<FocusOut>", lambda event, i=x: (self.mode3d.on_focus_out(event, i, 0, "y")))
-            entry.bind("<ButtonPress-1>", lambda event, i=x: self.mode3d.start_interaction_y(event, i))
-            entry.bind("<B1-Motion>", self.mode3d.drag_to_select)
-            entry.bind("<ButtonRelease-1>", self.mode3d.end_interaction)
-            entry.bind("<Control-a>", lambda event, i=x: self.mode3d.select_all(event, i, 0, "y"))
-            entry.bind("<Tab>", self.mode3d.clear_highlight_on_tab)
-            entry.bind("<Button-3>", self.y_axis_properties.show_context_menu)
-            self.entry_y_widgets.append(entry)
-            self.original_Y.append("00000")
-
-        self.fig_3d = plt.figure()
-        self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
-
-        self.fig_3d.patch.set_facecolor('#333')
-        self.ax_3d.set_facecolor('#333')
-
-        self.ax_3d.xaxis.pane.fill = True
-        self.ax_3d.yaxis.pane.fill = True
-        self.ax_3d.zaxis.pane.fill = True
-        self.ax_3d.xaxis.pane.set_facecolor('#333')
-        self.ax_3d.yaxis.pane.set_facecolor('#333')
-        self.ax_3d.zaxis.pane.set_facecolor('#333')
-
-        self.canvas_3d = FigureCanvasTkAgg(self.fig_3d, master=self.right_frame_3d)
-        self.canvas_widget_3d = self.canvas_3d.get_tk_widget()
-        self.canvas_widget_3d.grid(row=0, column=0, sticky="nsew")
-
-        self.canvas_widget_3d.bind("<ButtonPress-1>", self.mode2d.on_button_press)
-        self.canvas_widget_3d.bind("<ButtonRelease-1>", self.mode2d.on_button_release)
-        self.canvas_widget_3d.bind("<Motion>", self.mode2d.on_mouse_move)
-
-        self.start_x = None
-        self.start_y = None
-        self.end_x = None
-        self.end_y = None
-        self.selected_cells = set()
-
-        mid_frame_3d = CTkFrame(tab3, fg_color="#333")
-        mid_frame_3d.grid(row=1, column=0, columnspan=2)
-
-        update_3d = CTkButton(mid_frame_3d, text="Update", command=self.maps.update_3d_from_text,
-                              fg_color="#444", text_color="white", hover_color="#555", width=80)
-        update_3d.grid(row=0, column=0)
-
-        self.label_diff_3d = CTkButton(mid_frame_3d, text="Diff: 0", width=80, fg_color="#444",
-                                       text_color="white", hover_color="#555")
-        self.label_diff_3d.grid(row=0, column=1, padx=10)
-
-        row_frame_3d = CTkFrame(mid_frame_3d, border_color="#555", border_width=1, fg_color="#333")
-        row_frame_3d.grid(row=0, column=2, padx=5)
-
-        CTkLabel(row_frame_3d, text="Row:", fg_color="#333", text_color="white").grid(row=0, column=1, padx=5, pady=3)
-        self.rows_entry = CTkEntry(row_frame_3d, width=28, fg_color="#555", text_color="white")
-        self.rows_entry.insert(0, str(self.rows_3d))
-        self.rows_entry.grid(row=0, column=2, padx=5, pady=3)
-        self.rows_entry.configure(state="disabled")
-
-        col_frame_3d = CTkFrame(mid_frame_3d, border_color="#555", border_width=1, fg_color="#333")
-        col_frame_3d.grid(row=0, column=3, padx=5)
-
-        CTkLabel(col_frame_3d, text="Col:", fg_color="#333", text_color="white").grid(row=0, column=0, padx=5, pady=3)
-        self.columns_entry = CTkEntry(col_frame_3d, width=28, fg_color="#555", text_color="white")
-        self.columns_entry.insert(0, str(self.columns_3d))
-        self.columns_entry.grid(row=0, column=1, padx=5, pady=3)
-        self.columns_entry.configure(state="disabled")
-
-        value_dialog_3d_btn = CTkButton(mid_frame_3d, text="Value", command=self.value_dialog_3d.value_dialog,
-                                        fg_color="#444", text_color="white", hover_color="#555", width=80)
-        value_dialog_3d_btn.grid(row=0, column=4, padx=10)
-
-        update_3d_button = CTkButton(mid_frame_3d, text="Write Map", command=self.maps.write_map,
-                                     fg_color="#444", text_color="white", hover_color="#555", width=80)
-        update_3d_button.grid(row=0, column=5)
-
-        left_frame_3d = CTkFrame(tab3, fg_color="#333")
-        left_frame_3d.grid(row=1, column=0, pady=5, sticky=W)
-
-        copy_map_values_button = CTkButton(left_frame_3d, text="Copy Map", command=self.mode3d.copy_map_values,
-                                           fg_color="#444", text_color="white", hover_color="#555", width=80)
-        copy_map_values_button.grid(row=0, column=0, padx=5)
-
-        copy_selected_button = CTkButton(left_frame_3d, text="Copy Selected", command=self.mode3d.copy_selected_cells,
-                                         fg_color="#444", text_color="white", hover_color="#555", width=80)
-        copy_selected_button.grid(row=0, column=1, padx=5)
-
-        self.copy_x_axis_button = CTkButton(left_frame_3d, text="Copy X Axis", command=self.mode3d.copy_x_axis,
-                                            fg_color="#444", text_color="white", hover_color="#555", width=80)
-        self.copy_x_axis_button.grid(row=0, column=2, padx=5)
-
-        self.copy_y_axis_button = CTkButton(left_frame_3d, text="Copy Y Axis", command=self.mode3d.copy_y_axis,
-                                            fg_color="#444", text_color="white", hover_color="#555", width=80)
-        self.copy_y_axis_button.grid(row=0, column=3, padx=5)
-
-        east_frame_3d = CTkFrame(tab3, fg_color="#333")
-        east_frame_3d.grid(row=1, column=0, columnspan=2, pady=5, sticky=SE)
-
-        self.paste_x_button = CTkButton(east_frame_3d, text="Paste X Axis",
-                                        command=lambda: self.mode3d.paste_x_data(False, [], False),
-                                        fg_color="#444", text_color="white", hover_color="#555", width=80)
-        self.paste_x_button.grid(row=0, column=0, padx=5)
-
-        self.paste_y_button = CTkButton(east_frame_3d, text="Paste Y Axis",
-                                        command=lambda: self.mode3d.paste_y_data(False, [], False),
-                                        fg_color="#444", text_color="white", hover_color="#555", width=80)
-        self.paste_y_button.grid(row=0, column=1, padx=5)
-
-        paste_selected_3d_btn = CTkButton(east_frame_3d, text="Paste Selected", command=self.mode3d.paste_selected,
-                                          fg_color="#444", text_color="white", hover_color="#555", width=80)
-        paste_selected_3d_btn.grid(row=0, column=2, padx=5)
-
-        self.paste_button = CTkButton(east_frame_3d, text="Paste Map", hover_color="#555", width=80,
-                                      command=lambda: self.mode3d.paste_data(False, [], 0, 0, False, ""),
-                                      fg_color="#444",
-                                      text_color="white")
-        self.paste_button.grid(row=0, column=3, padx=5)
-
-        tab4 = Frame(self.notebook, bg="#333")
-        self.notebook.add(tab4, text=" Maps ")
-
-        self.map_list = Listbox(tab4, bg="#333", fg="white", font=10, highlightthickness=0)
-        self.map_list.pack(fill=BOTH, expand=YES)
-
-        self.map_list.bind('<Double-Button-1>', self.maps.on_double_click)
-
-        self.remove_menu = Menu(tab4, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        self.remove_menu.add_command(label="Remove", command=self.maps.remove_item)
-
-        self.map_list.bind("<Button-3>", self.maps.show_context_menu)
-
-        self.window.bind("<Button-1>", self.maps.hide_context_menu)
-
-        menu_bar = Menu(self.window, bg="#333", fg="white")
-        self.window.config(menu=menu_bar)
-
-        file_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        menu_bar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open", command=lambda: self.text_view_.open_file(self))
-        file_menu.add_command(label="Save", command=self.text_view_.save_file)
-
-        options_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        menu_bar.add_cascade(label="Options", menu=options_menu)
-        options_menu.add_command(label="Find", command=self.find_dialog.find_dialog)
-        options_menu.add_command(label="Import", command=lambda: self.file_import.import_file(self, False, ""))
-        options_menu.add_command(label="Difference", command=lambda: self.diff_dialog.differences_dialog(self))
-        options_menu.add_command(label="Value Changer", command=lambda event=None: self.value_dial.value_dialog(self, event))
-        options_menu.add_command(label="Find Hex Address", command=self.hex_address_dial.hex_find_dialog)
-
-        mappack_menu = Menu(menu_bar, tearoff=0, bg="#333", fg="white", borderwidth=0)
-        menu_bar.add_cascade(label="Mappack", menu=mappack_menu)
-        mappack_menu.add_command(label="Import Mappack", command=self.maps.import_map)
-        mappack_menu.add_command(label="Export Mappack", command=self.maps.export_map)
-
-        self.text_widget.bind("<Button-1>", self.text_addons.start_selection)
-        self.text_widget.bind("<ButtonRelease-1>", self.text_addons.stop_drag)
-        self.text_widget.bind("<Double-1>", self.text_addons.disable_double_click_selection)
-        self.text_widget.bind("<Key>", self.text_addons.disable_user_input)
-        self.text_widget.bind("<percent>", lambda event=None: self.value_dial.value_dialog(self, event))
-        self.text_widget.bind("<e>", self.text_addons.edit_mode)
-        self.text_widget.bind("<E>", self.text_addons.edit_mode)
-
-        self.text_widget.bind('<Motion>', self.text_addons.update_selected_count)
-
-        self.window.protocol("WM_DELETE_WINDOW", self.exit_app)
-
-        self.clean_up()
+        right_grid_layout.addWidget(btn_fast_right, 0, 0)
+        right_grid_layout.addWidget(btn_right, 0, 1)
+
+
+        main_layout.addWidget(self.canvas, 0, 0, 1, 2)
+        main_layout.addLayout(left_grid_layout, 1, 0, 1, 2)
+        main_layout.addLayout(mid_grid_layout, 1, 0, 1, 2)
+        main_layout.addLayout(right_grid_layout, 1, 0, 1, 2)
+
+        left_grid_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        mid_grid_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        right_grid_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        self.tab2.setLayout(main_layout)
+
+    def setup_tab3(self):
+        main_layout = QGridLayout()
+
+        left_grid_layout = QGridLayout()
+
+        left_grid_layout.setContentsMargins(0, 0, 0, 0)
+        left_grid_layout.setHorizontalSpacing(10)
+        left_grid_layout.setVerticalSpacing(10)
+
+        mid_grid_layout = QGridLayout()
+
+        mid_grid_layout.setContentsMargins(0, 0, 0, 0)
+        mid_grid_layout.setHorizontalSpacing(10)
+        mid_grid_layout.setVerticalSpacing(10)
+
+        right_grid_layout = QGridLayout()
+
+        mid_grid_layout.setContentsMargins(0, 0, 0, 0)
+        mid_grid_layout.setHorizontalSpacing(10)
+        mid_grid_layout.setVerticalSpacing(10)
+
+        button_style = """
+        QPushButton {
+            background-color: #444;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            font-weight: 650;
+            padding: 6px;
+            border: none;
+            border-radius: 5px;
+            min-width: 65px;
+        }
+        QPushButton:hover {
+            background-color: #666;
+            color: #fff;
+        }
+        QPushButton:pressed{
+            background-color: #444;
+            color: white;
+        }
+        """
+
+        btn0 = QPushButton("Copy Map", self)
+        btn0.setStyleSheet(button_style)
+        btn0.clicked.connect(self.mode3d.copy_map_values)
+
+        btn1 = QPushButton("Copy Selected", self)
+        btn1.setStyleSheet(button_style)
+        btn1.clicked.connect(self.mode3d.copy_selected_3d)
+
+        btn2 = QPushButton("Copy X Axis", self)
+        btn2.setStyleSheet(button_style)
+        btn2.clicked.connect(self.mode3d.copy_x_axis)
+
+        btn3 = QPushButton("Copy Y Axis", self)
+        btn3.setStyleSheet(button_style)
+        btn3.clicked.connect(self.mode3d.copy_y_axis)
+
+        btn4 = QPushButton("Update", self)
+        btn4.setStyleSheet(button_style)
+        btn4.clicked.connect(self.maps.update_3d_from_text)
+
+        self.diff_btn_3d = QPushButton("Diff: 00000", self)
+        self.diff_btn_3d.setStyleSheet(button_style)
+
+        frame_row = QFrame(self)
+        frame_row.setFrameShape(QFrame.Shape.StyledPanel)
+        frame_row.setFrameShadow(QFrame.Shadow.Raised)
+        frame_row.setStyleSheet("""
+            border: 2px solid #888;
+            border-radius: 5px;
+        """)
+
+        frame_row.setFixedHeight(35)
+        frame_row.setFixedWidth(75)
+
+        label_row = QLabel("Row:", frame_row)
+        label_row.setStyleSheet("""
+            border: 0;
+            color: white;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background: transparent;
+            margin-left: 5px;
+        """)
+
+        self.entry_row_3d = QLineEdit(self)
+        self.entry_row_3d.setStyleSheet("""
+            border: 2px;
+            border-radius: 5px;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background-color: #555;
+            height: 25px;
+            width: 28px;
+            margin-left: 41px;
+        """)
+
+        self.entry_row_3d.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.entry_row_3d.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        frame_col = QFrame(self)
+        frame_col.setFrameShape(QFrame.Shape.StyledPanel)
+        frame_col.setFrameShadow(QFrame.Shadow.Raised)
+        frame_col.setStyleSheet("""
+            border: 2px solid #888;
+            border-radius: 5px;
+        """)
+
+        frame_col.setFixedHeight(35)
+        frame_col.setFixedWidth(75)
+
+        label_col = QLabel("Col:", self)
+        label_col.setStyleSheet("""
+            border: 0;
+            color: white;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background: transparent;
+            margin-left: 5px;
+        """)
+
+        self.entry_col_3d = QLineEdit(self)
+        self.entry_col_3d.setStyleSheet("""
+            border: 2px;
+            border-radius: 5px;
+            font-family: 'Roboto';
+            font-size: 12px;
+            font-weight: 650;
+            background-color: #555;
+            height: 25px;
+            width: 28px;
+            margin-left: 41px;
+        """)
+
+        self.entry_col_3d.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.entry_col_3d.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.entry_row_3d.setReadOnly(True)
+        self.entry_col_3d.setReadOnly(True)
+
+        value_btn = QPushButton("Value", self)
+        value_btn.setStyleSheet(button_style)
+        value_btn.clicked.connect(self.maps.value_changer_dialog)
+
+        write_map_btn = QPushButton("Write Map", self)
+        write_map_btn.setStyleSheet(button_style)
+        write_map_btn.clicked.connect(self.maps.write_map)
+
+        btn10 = QPushButton("Paste X Axis", self)
+        btn10.setStyleSheet(button_style)
+        btn10.clicked.connect(lambda: self.mode3d.paste_x_data(False, [], False))
+
+        btn11 = QPushButton("Paste Y Axis", self)
+        btn11.setStyleSheet(button_style)
+        btn11.clicked.connect(lambda: self.mode3d.paste_y_data(False, [], False))
+
+        btn12 = QPushButton("Paste Selected", self)
+        btn12.setStyleSheet(button_style)
+        btn12.clicked.connect(self.mode3d.paste_selected)
+
+        btn13 = QPushButton("Paste Map", self)
+        btn13.setStyleSheet(button_style)
+        btn13.clicked.connect(lambda: self.mode3d.paste_data(False, [], 0, 0, False, ""))
+
+        left_grid_layout.addWidget(btn0, 0, 0)
+        left_grid_layout.addWidget(btn1, 0, 1)
+        left_grid_layout.addWidget(btn2, 0, 2)
+        left_grid_layout.addWidget(btn3, 0, 3)
+
+        mid_grid_layout.addWidget(btn4, 0, 0)
+        mid_grid_layout.addWidget(self.diff_btn_3d, 0, 1)
+
+        mid_grid_layout.addWidget(frame_row, 0, 2)
+        mid_grid_layout.addWidget(label_row, 0, 2)
+        mid_grid_layout.addWidget(self.entry_row_3d, 0, 2)
+
+        mid_grid_layout.addWidget(frame_col, 0, 3)
+        mid_grid_layout.addWidget(label_col, 0, 3)
+        mid_grid_layout.addWidget(self.entry_col_3d, 0, 3)
+
+        mid_grid_layout.addWidget(value_btn, 0, 4)
+        mid_grid_layout.addWidget(write_map_btn, 0, 5)
+
+        right_grid_layout.addWidget(btn10, 0, 0)
+        right_grid_layout.addWidget(btn11, 0, 1)
+        right_grid_layout.addWidget(btn12, 0, 2)
+        right_grid_layout.addWidget(btn13, 0, 3)
+
+        self.box_layout = CustomTableWidget(self)
+        self.box_layout.setRowCount(self.num_rows_3d)
+        self.box_layout.setColumnCount(self.num_columns_3d)
+
+        self.box_layout.setStyleSheet("""
+            QTableView {
+                background-color: #333;
+            }
+            QTableView::item:selected {
+                background-color: #5b9bf8;
+                color: white;
+            }
+            QHeaderView::section {
+                background-color: #363636;
+                color: white;
+            } 
+        """)
+
+        font = QFont("Cantarell", 11)
+        self.box_layout.setFont(font)
+
+        self.box_layout.itemChanged.connect(self.mode3d.validate_cell_input)
+        self.box_layout.itemSelectionChanged.connect(self.mode3d.on_selection_3d)
+
+        self.mode3d.set_default()
+
+        self.box_layout.horizontalHeader().sectionDoubleClicked.connect(self.mode3d.edit_horizontal_header)
+        self.box_layout.verticalHeader().sectionDoubleClicked.connect(self.mode3d.edit_vertical_header)
+
+        self.box_layout.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        self.box_layout.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+
+        self.box_layout.verticalHeader().setFixedWidth(55)
+
+        main_layout.addWidget(self.box_layout, 0, 0, 1, 2)
+
+        main_layout.addLayout(left_grid_layout, 1, 0, 1, 2)
+        main_layout.addLayout(mid_grid_layout, 1, 0, 1, 2)
+        main_layout.addLayout(right_grid_layout, 1, 0, 1, 2)
+
+        left_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
+        mid_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter)
+        right_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+
+        self.tab3.setLayout(main_layout)
+
+    def setup_tab4(self):
+        self.map_list = CustomListBox(self)
+        self.map_list.setStyleSheet("background-color: #333; color: white; font-size: 10pt;")
+        self.map_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+
+        self.map_list.itemDoubleClicked.connect(self.maps.on_double_click)
+
+        layout = QVBoxLayout(self.tab4)
+        layout.addWidget(self.map_list)
+
+        self.tab4.setLayout(layout)
+
+
+    def create_menu_bar(self):
+        menubar = self.menuBar()
+
+        menu_bar_style = ("""
+        QMenuBar {
+            background-color: #333;
+            color: white;
+        }
+        QMenuBar::item {
+            padding: 10px;
+            background-color: #333;
+        }
+        QMenuBar::item:selected {
+            background-color: #555;
+        }
+        QMenuBar::item:pressed {
+            background-color: #777;
+        }
+        QMenu {
+            background-color: #333;
+            color: white;
+        }
+        QMenu::item:selected {
+            background-color: #555;
+        }
+        QMenu::item:pressed {
+            background-color: #777;
+        }
+        """)
+
+        menubar.setStyleSheet(menu_bar_style)
+
+        file_menu = menubar.addMenu("File")
+
+        open_action = QAction("Open", self)
+        open_action.triggered.connect(self.text_view_.open_file)
+        file_menu.addAction(open_action)
+
+        save_action = QAction("Save", self)
+        save_action.triggered.connect(self.text_view_.save_file)
+        file_menu.addAction(save_action)
+
+        options_menu = menubar.addMenu("Options")
+
+        find_action = QAction("Find", self)
+        options_menu.addAction(find_action)
+        find_action.triggered.connect(self.text_addons.open_find_dialog)
+
+        import_action = QAction("Import", self)
+        options_menu.addAction(import_action)
+        import_action.triggered.connect(self.text_addons.import_file)
+
+        difference_action = QAction("Difference", self)
+        options_menu.addAction(difference_action)
+        difference_action.triggered.connect(self.text_addons.open_difference_dialog)
+
+        value_changer_action = QAction("Value Changer", self)
+        options_menu.addAction(value_changer_action)
+        value_changer_action.triggered.connect(self.text_addons.open_value_dialog)
+
+        find_hex_action = QAction("Find Hex Address", self)
+        options_menu.addAction(find_hex_action)
+        find_hex_action.triggered.connect(self.text_addons.open_hex_address_dialog)
+
+        restart_map_search = QAction("Restart Map Search", self)
+        options_menu.addAction(restart_map_search)
+        restart_map_search.triggered.connect(lambda: self.maps.start_potential_map_search(True))
+
+        map_pack_menu = menubar.addMenu("Mappack")
+
+        import_map_pack_action = QAction("Import Mappack", self)
+        map_pack_menu.addAction(import_map_pack_action)
+        import_map_pack_action.triggered.connect(self.maps.import_map)
+
+        export_map_pack_action = QAction("Export Mappack", self)
+        map_pack_menu.addAction(export_map_pack_action)
+        export_map_pack_action.triggered.connect(self.maps.export_map)
 
     def clean_up(self):
-        if self.new_path and os.path.exists(self.new_path):
-            os.remove(self.new_path)
-        documents_path = os.path.expanduser("~/Documents")
-        file_path = os.path.join(documents_path, "mappack.mp")
+        file_path = "mappack.mp"
         if os.path.exists(file_path):
             os.remove(file_path)
 
-    def exit_app(self, event=None):
+    def closeEvent(self, event):
+        if self.file_path:
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            msg_box.setWindowTitle("Save Changes?")
+            msg_box.setText("Do you really want to exit without saving?")
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+            response = msg_box.exec()
+
+            if response == QMessageBox.StandardButton.Yes:
+                self.exit_app()
+            else:
+                event.ignore()
+        else:
+            self.exit_app()
+
+    def exit_app(self):
+        self.tk_win_manager.kill_tkinter_window()
+        time.sleep(0.001)
         self.clean_up()
-        self.window.quit()
+        self.close()
+
+class QTableModel(QAbstractTableModel):
+    def __init__(self, data, parent=None):
+        super().__init__(parent)
+        self.linols = parent
+        self._data = [list(row) for row in data]
+        self._vertical_header_labels = []  # Initialize vertical header labels
+        self.undo_stack = []
+        self.redo_stack = []
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()):
+        return len(self._data)
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()):
+        return len(self._data[0]) if self._data else 0
+
+    def data(self, index: QModelIndex, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            value = self._data[index.row()][index.column()]
+            return f"{value:05}" if value is not None else ""
+
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignCenter
+
+        value = self._data[index.row()][index.column()]
+
+        if role == Qt.ItemDataRole.ForegroundRole:
+            color = self.linols.text_addons.highlight_difference(value, index.row(), index.column())
+            if color == "blue":
+                return QColor(Qt.GlobalColor.blue)
+            elif color == "red":
+                return QColor(Qt.GlobalColor.red)
+            elif color == "default":
+                return QColor(Qt.GlobalColor.white)
+
+        if role == Qt.ItemDataRole.BackgroundRole: # highlight user maps
+            index = (index.row() * self.linols.columns) + index.column()
+
+            if self.linols.map_list_counter > 0:
+                # user creted maps
+                for i in range(len(self.linols.start_index_maps)):
+                    down_limit = self.linols.start_index_maps[i]
+                    up_limit = self.linols.end_index_maps[i]
+                    if down_limit <= index <= up_limit:
+                        return QColor(133, 215, 242, 150) # light blue
+
+            # potential maps
+            for i in range(len(self.linols.potential_maps_start)):
+                down_limit = self.linols.potential_maps_start[i]
+                up_limit = self.linols.potential_maps_end[i]
+                if down_limit <= index <= up_limit:
+                    return QColor(1, 133, 123, 150) # teal green
+
+    def setData(self, index: QModelIndex, value, role):
+        if role == Qt.ItemDataRole.EditRole:
+            row, col = index.row(), index.column()
+            try:
+                new_value = int(value)
+                old_value = self._data[row][col]
+                if (new_value < 0) or (new_value > 65535):
+                    self._data[row][col] = self.linols.text_addons.revert_value(row, col)
+                else:
+                    self._data[row][col] = new_value
+                    self.redraw_canvas_2d(row, col, new_value)
+                self.undo_stack.append((row, col, old_value))
+                self.redo_stack.clear()
+                self.dataChanged.emit(index, index)
+            except ValueError:
+                return False
+        return True
+
+    def redraw_canvas_2d(self, row, col, value):
+        self.linols.current_values = list(self.linols.current_values)
+        index = (row * self.linols.columns) + col
+
+        self.linols.current_values[index] = value
+
+        self.linols.sync_2d_scroll = True
+        self.linols.mode2d.draw_canvas(self.linols)
+
+    def flags(self, index: QModelIndex):
+        return super().flags(index) | Qt.ItemFlag.ItemIsEditable
+
+    def set_data(self, data):
+        self._data = [list(row) for row in data]
+        self.layoutChanged.emit()
+
+    def setVerticalHeaderLabels(self, labels):
+        self._vertical_header_labels = labels
+        self.headerDataChanged.emit(Qt.Orientation.Vertical, 0, self.rowCount() - 1)
+
+    def headerData(self, section, orientation, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            if orientation == Qt.Orientation.Vertical:
+                return self._vertical_header_labels[section] if section < len(self._vertical_header_labels) else ""
+        return super().headerData(section, orientation, role)
+
+    def flags(self, index: QModelIndex):
+        return super().flags(index) | Qt.ItemFlag.ItemIsEditable
+
+    def get_all_data(self):
+        return self._data
+
+    def undo_changes(self):
+        if not self.linols.file_path:
+            QMessageBox.warning(None, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        if not self.undo_stack:
+            return
+
+        row, col, old_value = self.undo_stack.pop()
+
+        current_value = self._data[row][col]
+        self.redo_stack.append((row, col, current_value))
+
+        self._data[row][col] = old_value
+
+        index = self.index(row, col)
+        self.dataChanged.emit(index, index)
+
+    def redo_changes(self):
+        if not self.linols.file_path:
+            QMessageBox.warning(None, "Warning", "No file is currently open. Please open a file first.")
+            return
+
+        if not self.redo_stack:
+            return
+
+        row, col, old_value = self.redo_stack.pop()
+
+        current_value = self._data[row][col]
+        self.undo_stack.append((row, col, current_value))
+
+        self._data[row][col] = old_value
+
+        index = self.index(row, col)
+        self.dataChanged.emit(index, index)
+
+class CustomTableView(QTableView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.linols = parent
+        self.verticalScrollBar().valueChanged.connect(self.on_scroll)
+
+        font = QFont("Cantarell", 10)
+        self.verticalHeader().setFont(font)
+
+    def on_scroll(self):
+        if not self.linols.tab1_selected:
+            return
+
+        # Calculate the first visible row index by checking the geometry of each row
+        visible_rect = self.viewport().geometry()
+        first_visible_row = self.indexAt(visible_rect.topLeft()).row()
+
+        frame_before = self.linols.current_frame
+
+        index = first_visible_row * self.linols.columns
+        frame = self.linols.num_rows * self.linols.columns
+        frames_num = index // frame
+        self.linols.current_frame = frames_num * frame
+
+        if frame_before != self.linols.current_frame:
+            self.linols.sync_2d_scroll = True
+            self.linols.mode2d.draw_canvas(self.linols)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        super().keyPressEvent(event)
+        if event.key() in [Qt.Key.Key_PageUp, Qt.Key.Key_PageDown]: # Track when Page Up or Page Down is pressed
+            self.on_scroll()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.linols.text_addons.on_selection()
+        super().mouseReleaseEvent(event)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+            self.on_right_click(event)
+        super().mousePressEvent(event)
+
+    def on_right_click(self, event):
+        selection_model = self.linols.table_view.selectionModel()
+        selected_indexes_count = len(selection_model.selectedIndexes())
+
+        if selected_indexes_count != 1:
+            return
+
+        right_menu = QMenu(self.parent())
+
+        copy_hex = QAction("Copy Hex Address", self)
+        open_map_action = QAction("Open Map", self)
+        add_potential_map_action = QAction("Add Potential Map", self)
+        remove_potential_map_action = QAction("Remove Potential Map", self)
+
+        copy_hex.triggered.connect(self.linols.text_addons.copy_hex_address)
+        open_map_action.triggered.connect(self.linols.maps.open_map_right_click)
+        add_potential_map_action.triggered.connect(self.linols.maps.add_potential_map)
+        remove_potential_map_action.triggered.connect(self.linols.maps.remove_potential_map)
+
+        right_menu.addAction(copy_hex)
+        right_menu.addAction(open_map_action)
+        right_menu.addAction(add_potential_map_action)
+        right_menu.addAction(remove_potential_map_action)
+
+        pos = event.globalPosition().toPoint()
+
+        right_menu.exec(pos)
+
+    def keyPressEvent(self, event):
+        if event.key() == 16777274: # check if the F11 is pressed
+            self.on_f11_pressed()
+        else:
+            super().keyPressEvent(event)
+
+    def on_f11_pressed(self):
+        selection_model = self.linols.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+
+        for item in selected_indexes:
+            row = item.row()
+            col = item.column()
+
+            index_unpacked = (row * self.linols.columns) + col
+
+            index = self.linols.model.index(row, col)
+
+            self.linols.model.setData(index, self.linols.unpacked[index_unpacked], Qt.ItemDataRole.EditRole)
+
+class CustomListBox(QListWidget):
+    def __init__(self, ui):
+        super().__init__()
+        self.ui = ui
+
+    def contextMenuEvent(self, event):
+        context_menu = QMenu(self)
+
+        remove_action = QAction("Remove", self)
+        remove_action.triggered.connect(self.ui.maps.remove_item)
+        context_menu.addAction(remove_action)
+
+        context_menu.exec(event.globalPos())
+
+class CustomTableWidget(QTableWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.ui = parent
+
+        font = QFont("Cantarell", 10)
+        self.verticalHeader().setFont(font)
+        self.horizontalHeader().setFont(font)
+
+        self.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.horizontalHeader().customContextMenuRequested.connect(self.showHorizontalHeaderContextMenu)
+
+        self.verticalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.verticalHeader().customContextMenuRequested.connect(self.showVerticalHeaderContextMenu)
+
+
+    def contextMenuEvent(self, event):
+        context_menu = QMenu(self)
+
+        action_prop = QAction("Map Properties", self)
+        context_menu.addAction(action_prop)
+        action_sign_values = QAction("Sign Values 3D", self)
+        context_menu.addAction(action_sign_values)
+
+        action_prop.triggered.connect(lambda: self.ui.maps.map_properties_dialog("map"))
+        action_sign_values.triggered.connect(self.ui.maps.sign_values)
+
+        context_menu.exec(event.globalPos())
+
+    def showHorizontalHeaderContextMenu(self, pos: QPoint):
+        context_menu = QMenu(self)
+        action = context_menu.addAction(f"X-Axis Properties")
+        action.triggered.connect(lambda: self.ui.maps.map_properties_dialog("x"))
+        context_menu.exec(self.horizontalHeader().mapToGlobal(pos))
+
+    def showVerticalHeaderContextMenu(self, pos: QPoint):
+        context_menu = QMenu(self)
+        action = context_menu.addAction(f"Y-Axis Properties")
+        action.triggered.connect(lambda: self.ui.maps.map_properties_dialog("y"))
+        context_menu.exec(self.verticalHeader().mapToGlobal(pos))
