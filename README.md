@@ -73,6 +73,7 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   pip install pyinstaller
   ```
   Once you have pyinstaller installed you can run this command in the `"LinOLS directory"`:
+
   Linux:
   ```bash
   pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' main.py
