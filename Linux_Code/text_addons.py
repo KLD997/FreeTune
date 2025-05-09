@@ -533,7 +533,7 @@ class TextAddons:
 
                 index = (row * self.ui.columns) + col
 
-                temp_list[index] = new_value
+                temp_list[index] = int(new_value)
 
             self.ui.current_values = tuple(temp_list)
 
@@ -572,7 +572,9 @@ class TextAddons:
                 row = item.row()
                 col = item.column()
 
-                current_value = int(self.ui.table_view.item(row,col).text())
+                index = (row * self.ui.columns) + col
+
+                current_value = self.ui.current_values[index]
                 increase_value = int(current_value * percentage_increase)
 
                 new_value = current_value + increase_value
@@ -580,7 +582,6 @@ class TextAddons:
                 if 0 > new_value or new_value > 65535:
                     raise ValueError
 
-                index = (row * self.ui.columns) + col
 
                 temp_list[index] = new_value
 

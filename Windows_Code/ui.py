@@ -138,7 +138,7 @@ class LinOLS(QMainWindow):
         '''Custom Dialogs'''
         self.dialog_terminate = True
 
-        self.setStyleSheet("background-color: #333;")
+        self.setStyleSheet("background-color: #333; color: white;")
 
         self.setup_ui()
 
@@ -147,6 +147,31 @@ class LinOLS(QMainWindow):
 
         self.tabs = QTabWidget(self)
         self.setCentralWidget(self.tabs)
+
+        self.tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: none;
+            }
+
+            QTabBar::tab {
+                background: #343434;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 2px;
+                padding: 2px;
+                margin-right: 2px;
+                min-width: 40px;
+            }
+
+            QTabBar::tab:selected {
+                background: #3c3c3c;
+                border: 1px solid #666;
+            }
+
+            QTabBar::tab:hover {
+                background: #404040;
+            }
+        """)
 
         self.tabs.currentChanged.connect(self.text_addons.on_tab_changed)
 
@@ -174,6 +199,7 @@ class LinOLS(QMainWindow):
         self.create_shortcut(self.tab2, "Ctrl+G")
 
         self.create_shortcut(self.tab1, "Shift+5")
+        self.create_shortcut(self.tab3, "Shift+5")
 
         self.create_shortcut(self.tab1, "w")
         self.create_shortcut(self.tab1, "m")
@@ -184,15 +210,18 @@ class LinOLS(QMainWindow):
 
     def create_shortcut(self, tab, key_sequence):
         shortcut = QShortcut(QKeySequence(key_sequence), tab)
-        shortcut.activated.connect(lambda: self.on_shortcut_activated(key_sequence))
+        shortcut.activated.connect(lambda: self.on_shortcut_activated(key_sequence, tab))
 
-    def on_shortcut_activated(self, key_sequence):
+    def on_shortcut_activated(self, key_sequence, tab):
         if key_sequence == "Ctrl+F":
             self.text_addons.open_find_dialog()
         elif key_sequence == "Ctrl+G":
             self.text_addons.open_hex_address_dialog()
         elif key_sequence == "Shift+5":
-            self.text_addons.open_value_dialog()
+            if tab == self.tab1:
+                self.text_addons.open_value_dialog()
+            elif tab == self.tab3:
+                self.maps.value_changer_dialog()
         elif key_sequence == "w":
             self.text_addons.adjust_columns("-")
         elif key_sequence == "m":
@@ -351,7 +380,8 @@ class LinOLS(QMainWindow):
             background-color: #555;
             height: 25px;
             width: 28px;
-            margin-left: 50px;                    
+            margin-left: 50px;
+            color: white;                                 
         """)
 
         self.entry_col.setReadOnly(True)
@@ -709,6 +739,7 @@ class LinOLS(QMainWindow):
             background-color: #555;
             height: 25px;
             width: 25px;
+            color: white;
         """)
 
         self.entry_percentage.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -887,6 +918,7 @@ class LinOLS(QMainWindow):
             height: 25px;
             width: 28px;
             margin-left: 41px;
+            color: white;
         """)
 
         self.entry_row_3d.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -926,6 +958,7 @@ class LinOLS(QMainWindow):
             height: 25px;
             width: 28px;
             margin-left: 41px;
+            color: white;
         """)
 
         self.entry_col_3d.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -990,6 +1023,7 @@ class LinOLS(QMainWindow):
         self.box_layout.setStyleSheet("""
             QTableView {
                 background-color: #333;
+                color: white;
             }
             QTableView::item:selected {
                 background-color: #5b9bf8;
@@ -1046,30 +1080,30 @@ class LinOLS(QMainWindow):
         menubar = self.menuBar()
 
         menu_bar_style = ("""
-        QMenuBar {
-            background-color: #333;
-            color: white;
-        }
-        QMenuBar::item {
-            padding: 10px;
-            background-color: #333;
-        }
-        QMenuBar::item:selected {
-            background-color: #555;
-        }
-        QMenuBar::item:pressed {
-            background-color: #777;
-        }
-        QMenu {
-            background-color: #333;
-            color: white;
-        }
-        QMenu::item:selected {
-            background-color: #555;
-        }
-        QMenu::item:pressed {
-            background-color: #777;
-        }
+            QMenuBar {
+                background-color: #333;
+                color: white;
+            }
+            QMenuBar::item {
+                padding: 10px;
+                background-color: #333;
+            }
+            QMenuBar::item:selected {
+                background-color: #555;
+            }
+            QMenuBar::item:pressed {
+                background-color: #777;
+            }
+            QMenu {
+                background-color: #333;
+                color: white;
+            }
+            QMenu::item:selected {
+                background-color: #555;
+            }
+            QMenu::item:pressed {
+                background-color: #777;
+            }
         """)
 
         menubar.setStyleSheet(menu_bar_style)

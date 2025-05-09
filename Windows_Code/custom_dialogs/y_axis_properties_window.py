@@ -93,6 +93,7 @@ class YAxisProperties(QDialog):
             background-color: #555;
             height: 25px;
             width: 50px;
+            color: white;
         """
 
         # Factor field

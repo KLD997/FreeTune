@@ -64,7 +64,8 @@ class FindDialog(QDialog):
             font-weight: 650;
             background-color: #555;
             height: 25px;
-            width: 28px;                  
+            width: 28px;
+            color: white;            
         """)
 
         self.find_entry.setAlignment(Qt.AlignmentFlag.AlignCenter)

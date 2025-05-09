@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QDialog, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QAbstractItemView, \
-    QHeaderView, QApplication, QMessageBox
+    QHeaderView, QApplication
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
 
@@ -115,7 +115,6 @@ class DiffListBox(QWidget):
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setShowGrid(False)
         self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(True)
         self.table.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.table.cellDoubleClicked.connect(self.on_row_activated)

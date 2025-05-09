@@ -56,6 +56,7 @@ class ValueDialog(QDialog):
             background-color: #555;
             height: 25px;
             width: 28px;
+            color: white;
         """)
         self.entry.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.entry.setFocus()

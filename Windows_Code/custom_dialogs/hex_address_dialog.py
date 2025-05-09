@@ -71,7 +71,8 @@ class HexAddressDialog(QDialog):
             font-weight: 650;
             background-color: #555;
             height: 25px;
-            width: 28px;                  
+            width: 28px;   
+            color: white;               
         """)
         layout.addWidget(self.find_entry)
 
