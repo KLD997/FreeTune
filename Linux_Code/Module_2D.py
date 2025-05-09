@@ -243,6 +243,11 @@ class Mode2D:
             row = item.row()  # current row
             col = item.column()  # current column
 
+            index = row * self.ui.columns - self.ui.shift_count
+            frame = self.ui.num_rows * self.ui.columns
+            frames_num = index // frame
+            self.ui.current_frame = frames_num * frame
+
             index = row * self.ui.columns + col - self.ui.shift_count
 
             self.ui.red_line = int(index) - self.ui.current_frame
