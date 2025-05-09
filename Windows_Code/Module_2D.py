@@ -243,12 +243,10 @@ class Mode2D:
             row = item.row()  # current row
             col = item.column()  # current column
 
-            index = row * self.ui.columns - self.ui.shift_count
+            index = row * self.ui.columns + col - self.ui.shift_count
             frame = self.ui.num_rows * self.ui.columns
             frames_num = index // frame
             self.ui.current_frame = frames_num * frame
-
-            index = row * self.ui.columns + col - self.ui.shift_count
 
             self.ui.red_line = int(index) - self.ui.current_frame
 
@@ -312,25 +310,26 @@ class Mode2D:
 
         if forward:
             for i in range(index + 1, len(self.ui.current_values)):
-                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
                     found_value_index = i
-                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
                         found_value_index += 1
                         i += 1
+                    found_value_index -= 1
                     break
         else:
             for i in range(index - 1, -1, -1):
-                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
                     found_value_index = i
-                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count]:
+                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
                         found_value_index -= 1
                         i -= 1
-                    found_value_index -= 1
+                    found_value_index += 1
                     break
 
         if found_value_index is None:
             QMessageBox.warning(self.ui, "Warning", "No values found!")
             return
 
-        self.ui.mode2d.highlight_text(found_value_index, True)
+        self.ui.mode2d.highlight_text(found_value_index - self.ui.shift_count, True)
         self.ui.mode2d.text_to_2d(self.ui)
