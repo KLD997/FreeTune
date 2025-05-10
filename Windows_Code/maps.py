@@ -1,7 +1,6 @@
 import os
 from PyQt6.QtWidgets import QApplication, QMessageBox, QFileDialog
 from PyQt6.QtCore import Qt, QItemSelectionModel
-import subprocess
 
 class Maps_Utility:
     def __init__(self, ui):
@@ -35,11 +34,8 @@ class Maps_Utility:
         last_row = selected_indexes[-1].row()
         last_col = selected_indexes[-1].column()
 
-        start_index = (first_row * self.ui.columns) + first_col
-        end_index = (last_row * self.ui.columns) + last_col
-
-        self.start_index = start_index
-        self.end_index = end_index
+        self.start_index = (first_row * self.ui.columns) + first_col - self.ui.shift_count
+        self.end_index = (last_row * self.ui.columns) + last_col - self.ui.shift_count
 
         clipboard = QApplication.clipboard() # get data from clipboard
         clipboard_text = clipboard.text() # get text from clipboard
@@ -60,17 +56,17 @@ class Maps_Utility:
     def factor_dialog(self, factors):
         from custom_dialogs.maps_dialogs import Factor_Dialog
         dialog = Factor_Dialog(self.ui, self, factors)
-        self.ui.dialog_manager.open_dialog(dialog)
+        dialog.exec()
 
     def map_name_dialog(self):
         from custom_dialogs.maps_dialogs import Map_Name_Dialog
         dialog = Map_Name_Dialog(self.ui, self)
-        self.ui.dialog_manager.open_dialog(dialog)
+        dialog.exec()
 
     def value_changer_dialog(self):
         from custom_dialogs.value_dialog_3d import ValueDialog3D
         dialog = ValueDialog3D(self.ui)
-        self.ui.dialog_manager.open_dialog(dialog)
+        dialog.exec()
 
     def map_properties_dialog(self, option):
         if not self.ui.map_opened:
@@ -86,7 +82,7 @@ class Maps_Utility:
             from custom_dialogs.y_axis_properties_window import YAxisProperties
             dialog = YAxisProperties(self.ui)
 
-        self.ui.dialog_manager.open_dialog(dialog)
+        dialog.exec()
 
 
     def create_map(self, map_name):
@@ -148,8 +144,8 @@ class Maps_Utility:
                             content = file.read().split('\n')
                             for i in range(len(content)):
                                 if "x" in content[i]:
-                                    start = int(content[i - 2])
-                                    end = int(content[i - 1])
+                                    start = int(content[i - 2]) + self.ui.shift_count
+                                    end = int(content[i - 1]) + self.ui.shift_count
 
                                     if start <= index_value <= end:
                                         if i - 3 != 0:
@@ -194,8 +190,11 @@ class Maps_Utility:
                 return
 
             try:
-                start_index = int(content[item_index + 1])
-                end_index = int(content[item_index + 2]) + 1
+                start_index_unpacked = int(content[item_index + 1])
+                end_index_unpacked = int(content[item_index + 2]) + 1
+
+                start_index_current = start_index_unpacked + self.ui.shift_count
+                end_index_current = end_index_unpacked + self.ui.shift_count
                 size = content[item_index + 3].strip()
             except ValueError:
                 QMessageBox.warning(self.ui, "Warning",
@@ -205,12 +204,12 @@ class Maps_Utility:
 
             self.col, self.row = map(int, size.split('x'))
 
-            self.map_data = self.ui.unpacked[start_index:end_index]
+            self.map_data = self.ui.unpacked[start_index_unpacked:end_index_unpacked]
             self.ui.mode3d.paste_data(True, self.map_data, self.row, self.col, False, item)
 
-            if start_index >= self.col + self.row:
-                self.x_axis = self.ui.unpacked[start_index - self.col:start_index]
-                self.y_axis = self.ui.unpacked[start_index - (self.col + self.row):start_index - self.col]
+            if start_index_unpacked >= self.col + self.row:
+                self.x_axis = self.ui.unpacked[start_index_unpacked - self.col:start_index_unpacked]
+                self.y_axis = self.ui.unpacked[start_index_unpacked - (self.col + self.row):start_index_unpacked - self.col]
                 self.ui.mode3d.paste_x_data(True, self.x_axis, False)
                 self.ui.mode3d.paste_y_data(True, self.y_axis, False)
 
@@ -226,12 +225,12 @@ class Maps_Utility:
                     if col is not None:
                         self.ui.current_values.append(col)
 
-            self.map_data = self.ui.current_values[start_index:end_index]
+            self.map_data = self.ui.current_values[start_index_current:end_index_current]
             self.ui.mode3d.paste_data(True, self.map_data, self.row, self.col, True, item)
 
-            if start_index >= self.col + self.row:
-                self.x_axis = self.ui.current_values[start_index - self.col:start_index]
-                self.y_axis = self.ui.current_values[start_index - (self.col + self.row):start_index - self.col]
+            if start_index_current >= self.col + self.row:
+                self.x_axis = self.ui.current_values[start_index_current - self.col:start_index_current]
+                self.y_axis = self.ui.current_values[start_index_current - (self.col + self.row):start_index_current - self.col]
                 self.ui.mode3d.paste_x_data(True, self.x_axis, True)
                 self.ui.mode3d.paste_y_data(True, self.y_axis, True)
 
@@ -325,8 +324,8 @@ class Maps_Utility:
             content = file.read().split('\n')
             index = self.last_map_index * 10
             try:
-                start = int(content[index + 1])
-                end = int(content[index + 2])
+                start = int(content[index + 1]) + self.ui.shift_count
+                end = int(content[index + 2]) + self.ui.shift_count
             except ValueError:
                 QMessageBox.warning(self.ui, "Warning",
                                     "There is a problem with the mappack file. It appears to have been modified by an user."
@@ -364,13 +363,22 @@ class Maps_Utility:
         selected_index = self.ui.map_list.currentRow()
         item = self.ui.map_list.item(selected_index).text()
 
+        reply = QMessageBox.question(
+            self.ui,
+            'Confirm Action',
+            f"Are you sure you want to remove the map: {item}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
         start_index = 0
         end_index = 0
 
         if self.last_map_index == selected_index:
-            from Module_3D import Mode3D
-            mode3d = Mode3D(self.ui)
-            mode3d.set_default()
+            self.ui.mode3d.set_default()
         with open(self.file_path, 'r') as file:
             content = file.read().split("\n")
             for i in range(len(content)):
@@ -395,6 +403,31 @@ class Maps_Utility:
         self.ui.end_index_maps.remove(end_index)
 
         self.ui.mode2d.draw_canvas(self.ui)
+
+    def show_map_in_text(self):
+        selected_index = self.ui.map_list.currentRow()
+        item = self.ui.map_list.item(selected_index).text()
+
+        if self.last_map_index == selected_index:
+            self.ui.mode3d.set_default()
+        with open(self.file_path, 'r') as file:
+            content = file.read().split("\n")
+            for i in range(len(content)):
+                if content[i] == item:
+                    try:
+                        start_index = int(content[i + 1])
+                    except ValueError:
+                        QMessageBox.warning(self.ui, "Warning",
+                                            "There is a problem with the mappack file. It appears to have been modified by an user."
+                                            "\nPlease restart the application!")
+                        return
+                    del content[i:i + 10]
+                    break
+
+        self.ui.mode2d.highlight_text(start_index, True)
+        self.ui.mode2d.text_to_2d(self.ui)
+
+        self.ui.tabs.setCurrentIndex(0)
 
     def import_map(self):
         if not self.ui.file_path:

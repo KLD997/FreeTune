@@ -155,7 +155,7 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   
   You can right click on both axis and any map value to change the `axis's/map's properties`.
 
-  By right clicking on any map value you can `sign map values in 3d`.
+  You can quickly modify selected values by right-clicking on any map value. This will allow you to `sign map values in 3D` and `Value` -> used to change selected value quickly.
 
   Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`.
 
@@ -172,8 +172,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   `Diff: 0` Shows what is the change on the selected value.
 
   `Row and column boxes` are used to show current rows and columns in 3d view.
-
-  `Value` is used to change selected value quickly.
+  
+  `Ori: 0` Shows what is the original value of the selected value.
 
   `Write Map` is used to transfer values from 3d grid to text view, so update them.
 

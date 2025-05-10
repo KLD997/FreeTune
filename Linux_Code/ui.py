@@ -19,7 +19,6 @@ class LinOLS(QMainWindow):
         from Module_3D import Mode3D
         from maps import Maps_Utility
         from potential_maps.potential_maps import Potential_maps_manager
-        from custom_dialogs.dialog_handler import DialogManager
         from canva_3d.canva_3d_window import TkWindowManager
 
         self.setWindowTitle("LinOLS")
@@ -44,7 +43,6 @@ class LinOLS(QMainWindow):
         self.mode3d = Mode3D(self)
         self.maps = Maps_Utility(self)
         self.potential_maps_manager = Potential_maps_manager(self)
-        self.dialog_manager = DialogManager(self)
         self.tk_win_manager = TkWindowManager(self)
 
         '''General variables'''
@@ -68,6 +66,7 @@ class LinOLS(QMainWindow):
         self.red_line = None  # a red line in 2d
         self.num_rows = 55 # number of rows displayed in 2d
         self.sync_2d_scroll = False # sync 2d to text
+        self.disable_2d_canvas = True # disable drawing canvas when not in 2d tab
 
         '''Find dialog variables'''
         self.found_valuesx_values = [] # all found values
@@ -965,9 +964,8 @@ class LinOLS(QMainWindow):
         self.entry_row_3d.setReadOnly(True)
         self.entry_col_3d.setReadOnly(True)
 
-        value_btn = QPushButton("Value", self)
-        value_btn.setStyleSheet(button_style)
-        value_btn.clicked.connect(self.maps.value_changer_dialog)
+        self.ori_val_btn_3d = QPushButton("Ori: 00000", self)
+        self.ori_val_btn_3d.setStyleSheet(button_style)
 
         write_map_btn = QPushButton("Write Map", self)
         write_map_btn.setStyleSheet(button_style)
@@ -1005,7 +1003,7 @@ class LinOLS(QMainWindow):
         mid_grid_layout.addWidget(label_col, 0, 3)
         mid_grid_layout.addWidget(self.entry_col_3d, 0, 3)
 
-        mid_grid_layout.addWidget(value_btn, 0, 4)
+        mid_grid_layout.addWidget(self.ori_val_btn_3d, 0, 4)
         mid_grid_layout.addWidget(write_map_btn, 0, 5)
 
         right_grid_layout.addWidget(btn10, 0, 0)
@@ -1229,8 +1227,8 @@ class QTableModel(QAbstractTableModel):
             if self.linols.map_list_counter > 0:
                 # user creted maps
                 for i in range(len(self.linols.start_index_maps)):
-                    down_limit = self.linols.start_index_maps[i]
-                    up_limit = self.linols.end_index_maps[i]
+                    down_limit = self.linols.start_index_maps[i] + self.linols.shift_count
+                    up_limit = self.linols.end_index_maps[i] + self.linols.shift_count
                     if down_limit <= index <= up_limit:
                         return QColor(133, 215, 242, 150) # light blue
 
@@ -1355,6 +1353,13 @@ class CustomTableView(QTableView):
             self.linols.sync_2d_scroll = True
             self.linols.mode2d.draw_canvas(self.linols)
 
+    def get_first_visible_index(self):
+        visible_rect = self.viewport().geometry()
+        first_visible_row = self.indexAt(visible_rect.topLeft()).row()
+        index = first_visible_row * self.linols.columns
+
+        return index
+
     def keyPressEvent(self, event: QKeyEvent):
         super().keyPressEvent(event)
         if event.key() in [Qt.Key.Key_PageUp, Qt.Key.Key_PageDown]: # Track when Page Up or Page Down is pressed
@@ -1408,15 +1413,34 @@ class CustomTableView(QTableView):
         selection_model = self.linols.table_view.selectionModel()
         selected_indexes = selection_model.selectedIndexes()
 
+        temp_list = list(self.linols.current_values)
+
         for item in selected_indexes:
             row = item.row()
             col = item.column()
 
-            index_unpacked = (row * self.linols.columns) + col
+            index = (row * self.linols.columns) + col
+            index_unpacked = index - self.linols.shift_count
 
-            index = self.linols.model.index(row, col)
+            temp_list[index] = self.linols.unpacked[index_unpacked]
 
-            self.linols.model.setData(index, self.linols.unpacked[index_unpacked], Qt.ItemDataRole.EditRole)
+        self.linols.current_values = temp_list
+
+        rows = [self.linols.current_values[i:i + self.linols.columns] for i in
+                range(0, len(self.linols.current_values) - self.linols.columns, self.linols.columns)]  # get values by rows
+
+        remaining_elements = len(self.linols.current_values) % self.linols.columns  # last row offset
+
+        if remaining_elements:
+            last_row = list(self.linols.current_values[-remaining_elements:]) + [None] * (
+                    self.linols.columns - remaining_elements)  # last row values
+            rows.append(last_row)
+
+        self.linols.model.set_data(rows)
+        self.linols.model.layoutChanged.emit()
+
+        self.linols.text_view_.set_labels_y_axis()
+        self.linols.text_view_.set_column_width()
 
 class CustomListBox(QListWidget):
     def __init__(self, ui):
@@ -1429,6 +1453,10 @@ class CustomListBox(QListWidget):
         remove_action = QAction("Remove", self)
         remove_action.triggered.connect(self.ui.maps.remove_item)
         context_menu.addAction(remove_action)
+
+        show_action = QAction("Show in Text", self)
+        show_action.triggered.connect(self.ui.maps.show_map_in_text)
+        context_menu.addAction(show_action)
 
         context_menu.exec(event.globalPos())
 
@@ -1453,11 +1481,15 @@ class CustomTableWidget(QTableWidget):
 
         action_prop = QAction("Map Properties", self)
         context_menu.addAction(action_prop)
+        action_prop.triggered.connect(lambda: self.ui.maps.map_properties_dialog("map"))
+
         action_sign_values = QAction("Sign Values 3D", self)
         context_menu.addAction(action_sign_values)
-
-        action_prop.triggered.connect(lambda: self.ui.maps.map_properties_dialog("map"))
         action_sign_values.triggered.connect(self.ui.maps.sign_values)
+
+        value_dialog_action = QAction("Value Dialog", self)
+        context_menu.addAction(value_dialog_action)
+        value_dialog_action.triggered.connect(self.ui.maps.value_changer_dialog)
 
         context_menu.exec(event.globalPos())
 
@@ -1472,3 +1504,18 @@ class CustomTableWidget(QTableWidget):
         action = context_menu.addAction(f"Y-Axis Properties")
         action.triggered.connect(lambda: self.ui.maps.map_properties_dialog("y"))
         context_menu.exec(self.verticalHeader().mapToGlobal(pos))
+
+    def keyPressEvent(self, event):
+        if event.key() == 16777274: # check if the F11 is pressed
+            self.on_f11_pressed()
+        else:
+            super().keyPressEvent(event)
+
+    def on_f11_pressed(self):
+        selected_items = self.selectedItems()
+
+        for item in selected_items:
+            row = item.row()
+            col = item.column()
+
+            self.ui.mode3d.set_ori_value(row, col)

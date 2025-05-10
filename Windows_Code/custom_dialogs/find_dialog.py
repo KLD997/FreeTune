@@ -28,7 +28,7 @@ class FindDialog(QDialog):
                 background-color: #444;
                 color: white;
                 font-family: 'Roboto', sans-serif;
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 650;
                 padding: 6px;
                 border: none;
@@ -119,6 +119,7 @@ class FindDialog(QDialog):
 
         if not value_found:
             QMessageBox.warning(self.ui, "Warning", "No matching value was found.")
+            return
 
         selection_model = self.ui.table_view.selectionModel()
         selection_model.clearSelection()
@@ -169,6 +170,7 @@ class FindDialog(QDialog):
 
         if not value_found:
             QMessageBox.warning(self.ui, "Warning", "No matching value was found.")
+            return
 
         selection_model = self.ui.table_view.selectionModel()
         selection_model.clearSelection()

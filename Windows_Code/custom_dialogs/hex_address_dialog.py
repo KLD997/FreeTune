@@ -28,7 +28,7 @@ class HexAddressDialog(QDialog):
                 background-color: #444;
                 color: white;
                 font-family: 'Roboto', sans-serif;
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 650;
                 padding: 6px;
                 border: none;

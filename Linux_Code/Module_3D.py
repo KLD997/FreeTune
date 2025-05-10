@@ -873,25 +873,38 @@ class Mode3D:
             selected_index = selected_items[0]
             row = selected_index.row()
             col = selected_index.column()
+
+            item_text = self.ui.box_layout.item(row, col).text()
+
+            ori_val = self.ui.original[row][col]
+
             if not self.ui.map_decimal:
-                if len(self.ui.box_layout.item(row, col).text()) > 5:
-                    diff_value = int(float(self.ui.box_layout.item(row, col).text()) - float(self.ui.original[row][col]))
+                if len(item_text) > 5:
+                    diff_value = round(int(float(item_text) - float()), 0)
                 else:
-                    diff_value = int(self.ui.box_layout.item(row, col).text()) - int(self.ui.original[row][col])
+                    diff_value = round(int(item_text) - int(ori_val), 0)
             else:
-                diff_value = float(self.ui.box_layout.item(row, col).text()) - float(self.ui.original[row][col])
+                if len(item_text.split('.')) > 1:
+                    parts_text = item_text.split('.')
+
+                    float_len = len(parts_text[1])
+                else:
+                    float_len = 0
+                diff_value = round(float(item_text) - float(ori_val), float_len)
 
             if diff_value != 0:
                 if not self.ui.map_decimal:
                     self.ui.diff_btn_3d.setText(f"Diff: {diff_value:05}")
                 else:
                     parts = str(diff_value).split('.')
-                    self.ui.diff_btn_3d.setText(f"{int(parts[0]):05}.{parts[1]}")
-
+                    self.ui.diff_btn_3d.setText(f"Diff: {int(parts[0]):05}.{parts[1]}")
             else:
                 self.ui.diff_btn_3d.setText("Diff: 00000")
+
+            self.ui.ori_val_btn_3d.setText(f"Ori: {int(ori_val):05}")
         else:
             self.ui.diff_btn_3d.setText("Diff: 00000")
+            self.ui.ori_val_btn_3d.setText(f"Ori: 00000")
 
     def edit_horizontal_header(self, index):
         current_text = self.ui.box_layout.horizontalHeaderItem(index).text()
@@ -970,3 +983,6 @@ class Mode3D:
         if ok and value:
             self.ui.box_layout.verticalHeaderItem(index).setText(value)
             self.check_difference_y(index)
+
+    def set_ori_value(self, row, col):
+        self.ui.box_layout.item(row, col).setText(str(int(self.ui.original[row][col])))

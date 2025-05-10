@@ -139,9 +139,6 @@ class TkinterWindow:
         new_values = np.array([[float(self.ui.box_layout.item(i, j).text()) for j in range(self.ui.num_columns_3d)]
                            for i in range(self.ui.num_rows_3d)])
 
-        ori_values = np.array([[float(self.ui.original[i][j]) for j in range(self.ui.num_columns_3d)]
-                           for i in range(self.ui.num_rows_3d)])
-
         if self.ui.signed_values:
             for i in range(new_values.shape[0]):
                 for j in range(new_values.shape[1]):
@@ -150,9 +147,7 @@ class TkinterWindow:
 
         self.parent.ax_3d.clear()
 
-        surf_new = self.parent.ax_3d.plot_surface(x, y, new_values, color='#bf1d21', edgecolor='none')
-
-        surf_ori = self.parent.ax_3d.plot_surface(x, y, ori_values, color='#D3D3D3', edgecolor='none')
+        surface = self.parent.ax_3d.plot_surface(x, y, new_values, color='#D3D3D3', edgecolor='none')
 
         self.parent.ax_3d.set_xlabel('X')
         self.parent.ax_3d.set_ylabel('Y')

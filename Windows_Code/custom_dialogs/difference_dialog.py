@@ -38,7 +38,7 @@ class DifferenceDialog(QDialog):
             } 
         """)
 
-        font = QFont("Cantarell", 11)
+        font = QFont("Cantarell", 10)
         diff_list_box_widget.setFont(font)
 
         layout = QVBoxLayout(self)

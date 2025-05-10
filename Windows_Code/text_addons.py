@@ -316,10 +316,21 @@ class TextAddons:
 
         time_col_now = time.time()
 
-        if self.time_col + 0.6 >= time_col_now:
+        if self.time_col + 0.5 >= time_col_now:
             return
 
         self.time_col = time.time()
+
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+
+        if selected_indexes:
+            current_row = selected_indexes[0].row()
+            current_col = selected_indexes[0].column()
+
+            index = (current_row * self.ui.columns) + current_col
+        else:
+            index = self.ui.table_view.get_first_visible_index()
 
         if mode == "+" and self.ui.columns <= 50:
             self.ui.columns += 1
@@ -363,6 +374,13 @@ class TextAddons:
 
         self.ui.entry_col.setText(f"{self.ui.columns:02}")
 
+        if self.ui.current_values[index] is None:
+            while self.ui.current_values[index] is not None:
+                index += 1
+            index += self.ui.shift_count
+
+        self.ui.mode2d.highlight_text(index - self.ui.shift_count, True)
+
     def shift_values(self, mode):
         if not self.ui.file_path:
             QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
@@ -370,22 +388,16 @@ class TextAddons:
 
         time_shift_now = time.time()
 
-        if self.time_shift + 0.6 >= time_shift_now:
+        if self.time_shift + 0.5 >= time_shift_now:
             return
 
         if mode == "+" and self.ui.shift_count + 1 < self.ui.columns:
             self.ui.shift_count += 1
-            for i in range(len(self.ui.start_index_maps)):
-                self.ui.start_index_maps[i] += 1
-                self.ui.end_index_maps[i] += 1
             for i in range(len(self.ui.potential_maps_start)):
                 self.ui.potential_maps_start[i] += 1
                 self.ui.potential_maps_end[i] += 1
         elif mode == "-" and self.ui.shift_count >= 1:
             self.ui.shift_count -= 1
-            for i in range(len(self.ui.start_index_maps)):
-                self.ui.start_index_maps[i] -= 1
-                self.ui.end_index_maps[i] -= 1
             for i in range(len(self.ui.potential_maps_start)):
                 self.ui.potential_maps_start[i] -= 1
                 self.ui.potential_maps_end[i] -= 1
@@ -429,8 +441,12 @@ class TextAddons:
         else:
             self.ui.tab1_selected = False
         if index == 1:
+            self.ui.disable_2d_canvas = False
             self.ui.sync_2d_scroll = False
+            if self.ui.file_path:
+                self.ui.mode2d.draw_canvas(self.ui)
         else:
+            self.ui.disable_2d_canvas = True
             self.ui.sync_2d_scroll = True
         if index == 2:
             self.ui.tk_win_manager.open_tkinter_window()
@@ -448,13 +464,15 @@ class TextAddons:
             QMessageBox.warning(self.ui, "Warning", "No file for importing is currently open. "
                                                  "Please open a file for importing first.")
             return
-        if self.ui.file_path:
-            with open(import_file_path, 'rb') as file:
-                content = file.read()
-                if self.ui.low_high:
-                    self.ui.current_values = struct.unpack('<' + 'H' * (len(content) // 2), content)
-                else:
-                    self.ui.current_values = struct.unpack('>' + 'H' * (len(content) // 2), content)
+
+        with open(import_file_path, 'rb') as file:
+            content = file.read()
+            if self.ui.low_high:
+                self.ui.current_values = struct.unpack('<' + 'H' * (len(content) // 2), content)
+            else:
+                self.ui.current_values = struct.unpack('>' + 'H' * (len(content) // 2), content)
+
+        self.ui.current_values = (None,) * self.ui.shift_count + self.ui.current_values
 
         rows = [self.ui.current_values[i:i + self.ui.columns] for i in
                 range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
@@ -492,7 +510,7 @@ class TextAddons:
 
             temp_list[index] = int(int_value)
 
-        self.ui.current_values = tuple(temp_list)
+        self.ui.current_values = temp_list
 
         rows = [self.ui.current_values[i:i + self.ui.columns] for i in
                 range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
@@ -533,9 +551,9 @@ class TextAddons:
 
                 index = (row * self.ui.columns) + col
 
-                temp_list[index] = int(int_value)
+                temp_list[index] = int(new_value)
 
-            self.ui.current_values = tuple(temp_list)
+            self.ui.current_values = temp_list
 
             rows = [self.ui.current_values[i:i + self.ui.columns] for i in
                     range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
@@ -582,9 +600,10 @@ class TextAddons:
                 if 0 > new_value or new_value > 65535:
                     raise ValueError
 
+
                 temp_list[index] = new_value
 
-            self.ui.current_values = tuple(temp_list)
+            self.ui.current_values = temp_list
 
             rows = [self.ui.current_values[i:i + self.ui.columns] for i in
                     range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows

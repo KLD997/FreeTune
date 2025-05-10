@@ -16,6 +16,10 @@ class Mode2D:
 
     def draw_canvas(self, ui):
         self.ui = ui
+
+        if self.ui.disable_2d_canvas:
+            return
+
         self.ui.ax.clear()
 
         start_index = self.ui.current_frame + self.ui.shift_count
@@ -59,8 +63,8 @@ class Mode2D:
         # User created maps
 
         for i in range(len(self.ui.start_index_maps)):
-            start = start_maps[i]
-            end = end_maps[i]
+            start = start_maps[i] + self.ui.shift_count
+            end = end_maps[i] + self.ui.shift_count
 
             new_start = start - start_index
             new_end = end - start_index
@@ -270,6 +274,8 @@ class Mode2D:
                 self.ui.sel_start = int(index) - self.ui.current_frame
             else:
                 self.ui.sel_start = int(index)
+
+            self.ui.red_line = int(index) - self.ui.current_frame
 
             self.ui.sel_end = self.ui.sel_start + selected_indexes_count - 1
 
