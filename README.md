@@ -66,6 +66,39 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   ```bash
   python3 main.py
 ```
+## How to compile Cython files on Linux
+  ### Required packages
+  Before you start, ensure that you have the necessary packages installed. You can install `Cython` using pip:
+  ```bash
+  pip install Cython
+  ```
+  ### Compilation Steps
+  Navigate to the `potential_maps` directory:
+  ```bash
+  cd potential_maps
+  ```
+  Then the following command to compile the Cython files:
+  ```bash
+  python setup.py build_ext --inplace
+  ```
+## How to compile Cython files on Windows
+  ### Required packages
+  Before you start, ensure that you have the necessary packages installed. You can install `Cython` using pip:
+  ```bash
+  pip install Cython
+  ```
+  You also have to install `Microsoft Build Tools`.
+  
+  ### Compilation Steps
+  Navigate to the `potential_maps` directory:
+  ```bash
+  cd potential_maps
+  ```
+  Then the following command to compile the Cython files:
+  ```bash
+  python setup.py build_ext --inplace
+  ```
+
 ## How to make an executable
   To make an Executable you have to use `pyinstaller` a Python library to make executables.
   You can install `pyinstaller` using `pip`:
