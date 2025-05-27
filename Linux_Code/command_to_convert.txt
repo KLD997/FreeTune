@@ -1,1 +1,1 @@
-pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' main.py
+pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' --add-data='ui_components/col_add.png:ui_components' --add-data='ui_components/col_remove.png:ui_components' --add-data='ui_components/shift_col+.png:ui_components' --add-data='ui_components/shift_col-.png:ui_components' main.py

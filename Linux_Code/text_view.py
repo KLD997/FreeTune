@@ -17,6 +17,9 @@ class TextView:
         if self.ui.file_path:
             with open(self.ui.file_path, 'rb') as file:
                 content = file.read()
+                if len(content) % 2 != 0:
+                    QMessageBox.warning(self.ui, "Error", "Please open a valid file!")
+                    return
                 if self.ui.low_high:
                     self.ui.unpacked = struct.unpack('<' + 'H' * (len(content) // 2), content)
                     self.ui.btn_lo_hi.setEnabled(False)
@@ -25,13 +28,14 @@ class TextView:
                     self.ui.unpacked = struct.unpack('>' + 'H' * (len(content) // 2), content)
                     self.ui.btn_lo_hi.setEnabled(True)
                     self.ui.btn_hi_lo.setEnabled(False)
+
                 self.ui.current_values = self.ui.unpacked
 
                 self.ui.columns = 20
                 self.ui.shift_count = 0
 
-                self.ui.entry_col.setText(f"{self.ui.columns:02}")
-                self.ui.entry_shift.setText(f"{self.ui.shift_count:02}")
+                self.ui.entry_col.setText(f"Columns: {self.ui.columns:02}")
+                self.ui.entry_shift.setText(f"Shift: {self.ui.shift_count:02}")
 
                 self.rows = [self.ui.unpacked[i:i + self.ui.columns] for i in
                              range(0, len(self.ui.unpacked) - self.ui.columns, self.ui.columns)] # get values by rows
@@ -61,6 +65,7 @@ class TextView:
                 self.ui.start_index_maps = []
                 self.ui.end_index_maps = []
                 self.ui.maps_names = []
+                self.ui.maps.last_map_index = 0
 
                 self.ui.maps.start_potential_map_search(False)
 

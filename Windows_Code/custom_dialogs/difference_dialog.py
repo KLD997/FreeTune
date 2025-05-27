@@ -27,6 +27,7 @@ class DifferenceDialog(QDialog):
         diff_list_box_widget.setStyleSheet("""
             QTableView {
                 background-color: #333;
+                color: white;
             }
             QTableView::item:selected {
                 background-color: #5b9bf8;
@@ -38,7 +39,7 @@ class DifferenceDialog(QDialog):
             } 
         """)
 
-        font = QFont("Cantarell", 10)
+        font = QFont("Cantarell", 11)
         diff_list_box_widget.setFont(font)
 
         layout = QVBoxLayout(self)

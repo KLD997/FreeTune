@@ -1,6 +1,7 @@
 import os
 from PyQt6.QtWidgets import QApplication, QMessageBox, QFileDialog
-from PyQt6.QtCore import Qt, QItemSelectionModel
+from PyQt6.QtCore import Qt, QItemSelectionModel, QTimer
+
 
 class Maps_Utility:
     def __init__(self, ui):
@@ -123,7 +124,17 @@ class Maps_Utility:
             file.write(f"{1.0}\n") # y-axis factor
             file.write(f"{0}") # y-axis decimals
 
+    def auto_enable_context_menu(self):
+        self.ui.box_layout.setContextMenuPolicy(Qt.ContextMenuPolicy.DefaultContextMenu)
+
     def open_map_right_click(self):
+        self.ui.box_layout.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+
+        self.timer = QTimer(self.ui)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.auto_enable_context_menu)
+        self.timer.start()
+
         selection_model = self.ui.table_view.selectionModel()
         selection_indexes = selection_model.selectedIndexes()
 
@@ -154,8 +165,8 @@ class Maps_Utility:
                                             map_index = 0
                                         self.last_map_index = map_index
                                         self.double_click = True
-                                        self.update_3d_from_text()
                                         self.ui.tabs.setCurrentIndex(2)
+                                        self.update_3d_from_text()
                                         break
                     except ValueError:
                         QMessageBox.warning(self.ui, "Warning",
@@ -172,7 +183,6 @@ class Maps_Utility:
 
     def update_3d_from_text(self):
         if not os.path.exists(self.file_path) or self.ui.map_list_counter == 0:
-            QMessageBox.warning(self.ui, "Warning", "Please create or import a mappack!")
             return
 
         item = self.ui.map_list.item(self.last_map_index).text()
@@ -246,7 +256,7 @@ class Maps_Utility:
         self.ui.mode2d.draw_canvas(self.ui)
 
     def write_map(self):
-        if not os.path.exists(self.file_path):
+        if not os.path.exists(self.file_path) or self.ui.map_list_counter == 0:
             return
 
         map_values = []
@@ -260,12 +270,9 @@ class Maps_Utility:
             for i in range(len(content)):
                 if content[i] == item:
                     try:
-                        self.map_factor = float(content[i + 4])
-                        self.precision = int(content[i + 5])
-                        self.x_axis_factor = float(content[i + 6])
-                        self.x_axis_precision = int(content[i + 7])
-                        self.y_axis_factor = float(content[i + 8])
-                        self.y_axis_precision = int(content[i + 9])
+                        map_factor = float(content[i + 4])
+                        x_axis_factor = float(content[i + 6])
+                        y_axis_factor = float(content[i + 8])
                     except ValueError:
                         QMessageBox.warning(self.ui, "Warning",
                                             "There is a problem with the mappack file. It appears to have been modified by an user."
@@ -291,7 +298,7 @@ class Maps_Utility:
                 value = value_entry
             else:
                 value = self.ui.y_values[i]
-            value /= self.y_axis_factor
+            value /= y_axis_factor
             value = round(value)
             map_values.append(int(value))
 
@@ -302,7 +309,7 @@ class Maps_Utility:
                 value = value_entry
             else:
                 value = self.ui.x_values[i]
-            value /= self.x_axis_factor
+            value /= x_axis_factor
             value = round(value)
             map_values.append(int(value))
 
@@ -315,7 +322,7 @@ class Maps_Utility:
                     value = value_entry
                 else:
                     value = self.ui.map_values[index_map]
-                value /= self.map_factor
+                value /= map_factor
                 value = round(value)
                 map_values.append(int(value))
                 index_map += 1
@@ -440,8 +447,7 @@ class Maps_Utility:
             try:
                 self.ui.map_list_counter = 0
                 self.last_map_index = 0
-                from Module_3D import Mode3D
-                mode3d = Mode3D(self.ui)
+                mode3d = self.ui.mode3d
                 mode3d.set_default()
                 with open(file_path, 'r') as file:
                     content = file.read().split('\n')
@@ -450,6 +456,8 @@ class Maps_Utility:
                             for i in range(len(content)):
                                 temp_file.write(f"{content[i]}\n" if i < len(content) - 1 else content[i])
                             self.ui.map_list.clear()
+                            self.ui.start_index_maps.clear()
+                            self.ui.end_index_maps.clear()
                             self.ui.maps_names = []
                             self.first_run = False
                         for i in range(len(content) // 10):

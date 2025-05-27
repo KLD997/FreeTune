@@ -45,6 +45,7 @@ class TkWindowManager:
         def run_tk():
             self.tk_root = Tk()
             self.tk_root.geometry(f"+{x}+{y}")
+            #self.tk_root.attributes('-topmost', True)  # set the window to stay on top
             self.tk_win = TkinterWindow(self.tk_root, self.ui, self)
             self.tkinter_available = True
 

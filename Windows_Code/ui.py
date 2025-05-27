@@ -1,9 +1,8 @@
 import time
-
 from PyQt6.QtCore import QAbstractTableModel, QModelIndex
 from PyQt6.QtWidgets import QMainWindow, QWidget, QTabWidget, QTableView, QHeaderView, QGridLayout, QPushButton, QFrame, \
-    QLabel, QLineEdit, QSizePolicy, QSpacerItem, QTableWidget, QListWidget, QVBoxLayout, QMenu, QMessageBox
-from PyQt6.QtGui import QAction, QGuiApplication, QColor, QKeyEvent, QKeySequence, QShortcut, QFont, QPalette, QIcon
+    QLabel, QLineEdit, QSizePolicy, QSpacerItem, QTableWidget, QListWidget, QVBoxLayout, QMenu, QMessageBox, QStyle
+from PyQt6.QtGui import QAction, QGuiApplication, QColor, QKeyEvent, QKeySequence, QShortcut, QFont, QIcon
 from PyQt6.QtCore import Qt, QPoint
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
@@ -20,6 +19,7 @@ class LinOLS(QMainWindow):
         from maps import Maps_Utility
         from potential_maps.potential_maps import Potential_maps_manager
         from canva_3d.canva_3d_window import TkWindowManager
+        from ui_components.toolbar import ToolbarWidget
 
         self.setWindowTitle("LinOLS")
 
@@ -28,6 +28,8 @@ class LinOLS(QMainWindow):
         self.setWindowIcon(self.logo_icon)
 
         self.setMinimumWidth(1300)
+
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         screen = QGuiApplication.primaryScreen().geometry()
         screen_width = screen.width()
@@ -48,6 +50,7 @@ class LinOLS(QMainWindow):
         self.maps = Maps_Utility(self)
         self.potential_maps_manager = Potential_maps_manager(self)
         self.tk_win_manager = TkWindowManager(self)
+        self.toolbar_widget = ToolbarWidget(self)
 
         '''General variables'''
         self.file_path = "" # file path of the loaded file
@@ -205,6 +208,26 @@ class LinOLS(QMainWindow):
 
         self.create_shortcut(self.tab1, "k")
 
+        self.create_shortcut(self.tab1, "n")
+        self.create_shortcut(self.tab1, "v")
+        self.create_shortcut(self.tab1, "Ctrl+U")
+        self.create_shortcut(self.tab1, "e")
+        self.create_shortcut(self.tab1, "l")
+
+        self.create_shortcut(self.tab1, "Ctrl+Z")
+        self.create_shortcut(self.tab1, "Ctrl+Y")
+
+        self.create_shortcut(self.tab1, "Ctrl+C")
+        self.create_shortcut(self.tab1, "Ctrl+V")
+
+        self.create_shortcut(self.tab3, "Ctrl+C")
+        self.create_shortcut(self.tab3, "Ctrl+V")
+
+        self.create_shortcut(self.tab3, "Ctrl+Shift+C")
+        self.create_shortcut(self.tab3, "Ctrl+Shift+V")
+
+        self.create_shortcut(self.tab3, "Alt+Return")
+
         self.clean_up()
 
     def create_shortcut(self, tab, key_sequence):
@@ -227,12 +250,133 @@ class LinOLS(QMainWindow):
             self.text_addons.adjust_columns("+")
         elif key_sequence == "k":
             self.maps.add_map()
+        elif key_sequence == "n":
+            self.mode2d.value_changes_skipping(True)
+        elif key_sequence == "v":
+            self.mode2d.value_changes_skipping(False)
+        elif key_sequence == "Ctrl+U":
+            self.text_addons.open_difference_dialog()
+        elif key_sequence == "e":
+            self.mode2d.first_last_changed_value(True)
+        elif key_sequence == "l":
+            self.mode2d.first_last_changed_value(False)
+        elif key_sequence == "Ctrl+Z":
+            if tab == self.tab1:
+                self.model.undo_changes()
+        elif key_sequence == "Ctrl+Y":
+            if tab == self.tab1:
+                self.model.redo_changes()
+        elif key_sequence == "Ctrl+C":
+            if tab == self.tab1:
+                self.text_addons.copy_values(False)
+            elif tab == self.tab3:
+                self.mode3d.copy_selected_3d()
+        elif key_sequence == "Ctrl+V":
+            if tab == self.tab1:
+                self.text_addons.paste_values()
+            elif tab == self.tab3:
+                self.mode3d.paste_selected()
+        elif key_sequence == "Ctrl+Shift+C":
+            self.mode3d.copy_map()
+        elif key_sequence == "Ctrl+Shift+V":
+            self.mode3d.paste_map()
+        elif key_sequence == "Alt+Return":
+            self.maps.map_properties_dialog("map")
+
+    def setup_bottom_row(self, main_layout):
+        text_layout = QGridLayout()
+        text_layout.setContentsMargins(0, 0, 0, 5)
+        text_layout.setHorizontalSpacing(0)
+        text_layout.setVerticalSpacing(0)
+
+        self.sel_label = QLabel("Selected: 0", self)
+        self.sel_label.setStyleSheet("""
+                    color: white;
+                    font-family: 'Roboto', sans-serif;
+                    font-size: 12px;
+                    font-weight: 650;
+                    padding-left: 10px;
+                    padding-right: 10px;
+                """)
+
+        self.value_label = QLabel("Ori: 00000", self)
+        self.value_label.setStyleSheet("""
+                    color: white;
+                    font-family: 'Roboto', sans-serif;
+                    font-size: 12px;
+                    font-weight: 650;
+                    padding-left: 10px;
+                """)
+
+        self.value_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        svg_arrow_right = """
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 40 40" stroke-width="4" stroke="white" class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h20m0 0l-6 6m6-6l-6-6" />
+                    </svg>
+                """
+
+        icon = self.toolbar_widget.svg_to_icon(svg_arrow_right)
+
+        arrow_label = QLabel()
+        arrow_label.setPixmap(icon.pixmap(16, 16))
+
+        self.difference_label = QLabel("00000  (0.00%)", self)
+        self.difference_label.setStyleSheet("""
+                    color: white;
+                    font-family: 'Roboto', sans-serif;
+                    font-size: 12px;
+                    font-weight: 650;
+                    padding-right: 10px;
+                """)
+
+        self.difference_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.entry_shift = QLabel(f"Shift: {self.shift_count:02}", self)
+        self.entry_shift.setStyleSheet("""
+                    font-family: 'Roboto';
+                    font-size: 12px;
+                    font-weight: 650;
+                    color: white;
+                    padding-left: 10px;
+                    padding-right: 5px;
+                """)
+
+        self.entry_shift.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.entry_col = QLabel(f"Columns: {self.columns:02}", self)
+        self.entry_col.setStyleSheet("""
+                    font-family: 'Roboto';
+                    font-size: 12px;
+                    font-weight: 650;
+                    color: white;
+                    padding-right: 10px;        
+                """)
+
+        self.entry_col.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        text_layout.addWidget(self.sel_label, 0, 0)
+        text_layout.addWidget(self.value_label, 0, 1)
+        text_layout.addWidget(arrow_label, 0, 2)
+        text_layout.addWidget(self.difference_label, 0, 3)
+        text_layout.addWidget(self.entry_shift, 0, 4)
+        text_layout.addWidget(self.entry_col, 0, 5)
+
+        main_layout.addLayout(text_layout, 2, 0, 1, 2)
+
+        text_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
     def setup_tab1(self):
         main_layout = QGridLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setHorizontalSpacing(0)
+        main_layout.setVerticalSpacing(0)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+
+        main_layout.addWidget(self.toolbar_widget, 0, 0)
 
         self.table_view = CustomTableView(self)
-        main_layout.addWidget(self.table_view, 0, 0)
+        main_layout.addWidget(self.table_view, 1, 0)
 
         font = QFont("Cantarell", 10)
         self.table_view.setFont(font)
@@ -240,6 +384,8 @@ class LinOLS(QMainWindow):
         self.table_view.setStyleSheet("""
             QTableView {
                 background-color: #333;
+                padding-left: 10px;
+                padding-right: 10px;
             }
             QTableView::item:selected {
                 background-color: #5b9bf8;
@@ -248,10 +394,7 @@ class LinOLS(QMainWindow):
             QHeaderView::section {
                 background-color: #363636;
                 color: white;
-            }
-            QTableCornerButton::section {
-                background-color: #333;
-            }
+            } 
         """)
 
         self.model = QTableModel(self.unpacked, self)
@@ -264,361 +407,7 @@ class LinOLS(QMainWindow):
 
         self.table_view.verticalHeader().setFixedWidth(60) # change width of x-axis
 
-        left_grid_layout = QGridLayout()
-
-        left_grid_layout.setContentsMargins(0, 0, 0, 0)
-        left_grid_layout.setHorizontalSpacing(10)
-        left_grid_layout.setVerticalSpacing(10)
-
-        mid_grid_layout = QGridLayout()
-
-        mid_grid_layout.setSpacing(0)
-
-        mid_grid_layout.setContentsMargins(0, 0, 0, 0)
-        mid_grid_layout.setHorizontalSpacing(0)
-        mid_grid_layout.setVerticalSpacing(10)
-
-        right_grid_layout = QGridLayout()
-
-        right_grid_layout.setContentsMargins(0, 0, 0, 0)
-        right_grid_layout.setHorizontalSpacing(10)
-        right_grid_layout.setVerticalSpacing(10)
-
-        button_style = """
-        QPushButton {
-            background-color: #444;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 11px;
-            font-weight: 650;
-            padding: 6px;
-            border: none;
-            border-radius: 5px;
-            min-width: 65px;
-        }
-        QPushButton:hover {
-            background-color: #666;
-            color: #fff;
-        }
-        QPushButton:pressed{
-            background-color: #444;
-            color: white;
-        }
-        QPushButton:disabled {
-            background-color: #555;
-            color: #aaa;
-        }
-        """
-
-        self.btn_lo_hi = QPushButton("16-bit Lo-Hi", self)
-        self.btn_lo_hi.clicked.connect(lambda: self.text_view_.ask_change_display_mode("low_high"))
-        self.btn_lo_hi.setStyleSheet(button_style)
-
-        self.btn_hi_lo = QPushButton("16-bit Hi-Lo", self)
-        self.btn_hi_lo.clicked.connect(lambda: self.text_view_.ask_change_display_mode("high_low"))
-        self.btn_hi_lo.setStyleSheet(button_style)
-
-        btn2 = QPushButton("Add Map", self)
-        btn2.setStyleSheet(button_style)
-        btn2.clicked.connect(self.maps.add_map)
-
-        btn3 = QPushButton("Text to 2D", self)
-        btn3.setStyleSheet(button_style)
-        btn3.clicked.connect(lambda: self.mode2d.text_to_2d(self))
-
-        self.sel_btn = QPushButton("Selected: 0", self)
-        self.sel_btn.setStyleSheet("""
-        QPushButton {
-            background-color: #444;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 11px;
-            font-weight: 650;
-            padding: 6px;
-            border: none;
-            border-radius: 5px;
-            min-width: 65px;
-            margin-right: 10px;
-        }
-        QPushButton:hover {
-            background-color: #666;
-            color: #fff;
-        }
-        QPushButton:pressed{
-            background-color: #444;
-            color: white;
-        }
-        """)
-
-        frame_col = QFrame(self)
-        frame_col.setFrameShape(QFrame.Shape.StyledPanel)
-        frame_col.setFrameShadow(QFrame.Shadow.Raised)
-        frame_col.setStyleSheet("""
-            border: 2px solid #888;
-            border-radius: 5px;
-        """)
-
-        frame_col.setFixedHeight(35)
-        frame_col.setFixedWidth(140)
-
-        label_col = QLabel("Width:", self)
-        label_col.setStyleSheet("""
-            border: 0;
-            color: white;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background: transparent;
-            margin-left: 5px;
-        """)
-
-        self.entry_col = QLineEdit(f"{self.columns:02}", self)
-        self.entry_col.setStyleSheet("""
-            border: 2px;
-            border-radius: 5px;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background-color: #555;
-            height: 25px;
-            width: 28px;
-            margin-left: 50px;
-            color: white;                                 
-        """)
-
-        self.entry_col.setReadOnly(True)
-
-        self.entry_col.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.entry_col.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        btn_col_plus = QPushButton("+", self)
-        btn_col_plus.setStyleSheet("""
-        QPushButton {
-            background-color: #444;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 11px;
-            font-weight: 650;
-            padding: 6px;
-            border: none;
-            border-radius: 5px;
-            min-width: 10px;
-            margin-left: 8px;
-        }
-        QPushButton:hover {
-            background-color: #666;
-            color: #fff;
-        }
-        QPushButton:pressed{
-            background-color: #444;
-            color: white;
-        }
-        """)
-        btn_col_plus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        btn_col_plus.clicked.connect(lambda: self.text_addons.adjust_columns("+"))
-
-        btn_col_minus = QPushButton("-", self)
-        btn_col_minus.setStyleSheet("""
-        QPushButton {
-            background-color: #444;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 11px;
-            font-weight: 650;
-            padding: 6px;
-            border: none;
-            border-radius: 5px;
-            min-width: 10px;
-            margin-left: 5px;
-        }
-        QPushButton:hover {
-            background-color: #666;
-            color: #fff;
-        }
-        QPushButton:pressed{
-            background-color: #444;
-            color: white;
-        }
-        """)
-        btn_col_minus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        btn_col_minus.clicked.connect(lambda: self.text_addons.adjust_columns("-"))
-
-        frame_shift = QFrame(self)
-        frame_shift.setFrameShape(QFrame.Shape.StyledPanel)
-        frame_shift.setFrameShadow(QFrame.Shadow.Raised)
-        frame_shift.setStyleSheet("""
-            border: 2px solid #888;
-            border-radius: 5px;
-        """)
-
-        frame_shift.setFixedHeight(35)
-        frame_shift.setFixedWidth(140)
-
-        label_shift = QLabel("Shift:", self)
-        label_shift.setStyleSheet("""
-            border: 0;
-            color: white;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background: transparent;
-            margin-left: 5px;
-        """)
-
-        self.entry_shift = QLineEdit(f"{self.shift_count:02}", self)
-        self.entry_shift.setStyleSheet("""
-            border: 2px;
-            border-radius: 5px;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background-color: #555;
-            height: 25px;
-            width: 28px;
-            margin-left: 50px;
-        """)
-
-        self.entry_shift.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.entry_shift.setReadOnly(True)
-
-        self.entry_shift.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        btn_shift_plus = QPushButton("+", self)
-        btn_shift_plus.setStyleSheet("""
-        QPushButton {
-            background-color: #444;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 11px;
-            font-weight: 650;
-            padding: 6px;
-            border: none;
-            border-radius: 5px;
-            min-width: 10px;
-            margin-left: 8px;
-        }
-        QPushButton:hover {
-            background-color: #666;
-            color: #fff;
-        }
-        QPushButton:pressed{
-            background-color: #444;
-            color: white;
-        }
-        """)
-        btn_shift_plus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        btn_shift_plus.clicked.connect(lambda: self.text_addons.shift_values("+"))
-
-        btn_shift_minus = QPushButton("-", self)
-        btn_shift_minus.setStyleSheet("""
-        QPushButton {
-            background-color: #444;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 11px;
-            font-weight: 650;
-            padding: 6px;
-            border: none;
-            border-radius: 5px;
-            min-width: 10px;
-            margin-left: 5px;
-        }
-        QPushButton:hover {
-            background-color: #666;
-            color: #fff;
-        }
-        QPushButton:pressed{
-            background-color: #444;
-            color: white;
-        }
-        """)
-        btn_shift_minus.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        btn_shift_minus.clicked.connect(lambda: self.text_addons.shift_values("-"))
-
-        self.value_btn = QPushButton("Ori: 00000", self)
-        self.value_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #444;
-                    color: white;
-                    font-family: 'Roboto', sans-serif;
-                    font-size: 12px;
-                    font-weight: 650;
-                    padding: 6px;
-                    border: none;
-                    border-radius: 5px;
-                    min-width: 65px;
-                    margin-left: 10px;
-                }
-                QPushButton:hover {
-                    background-color: #666;
-                    color: #fff;
-                }
-                QPushButton:pressed{
-                    background-color: #444;
-                    color: white;
-                }
-                """)
-
-        copy_btn = QPushButton("Copy", self)
-        copy_btn.setStyleSheet(button_style)
-        copy_btn.clicked.connect(lambda: self.text_addons.copy_values(False))
-
-        paste_btn = QPushButton("Paste", self)
-        paste_btn.setStyleSheet(button_style)
-        paste_btn.clicked.connect(self.text_addons.paste_values)
-
-        btn12 = QPushButton("Undo", self)
-        btn12.setStyleSheet(button_style)
-        btn12.clicked.connect(self.model.undo_changes)
-
-        btn13 = QPushButton("Redo", self)
-        btn13.setStyleSheet(button_style)
-        btn13.clicked.connect(self.model.redo_changes)
-
-        spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        left_grid_layout.addWidget(self.btn_lo_hi, 0, 0)
-        left_grid_layout.addWidget(self.btn_hi_lo, 0, 1)
-        left_grid_layout.addWidget(btn2, 0, 2)
-        left_grid_layout.addWidget(btn3, 0, 3)
-
-        mid_grid_layout.addWidget(self.sel_btn, 0, 0)
-
-        mid_grid_layout.addWidget(frame_col, 0, 1, 1, 4)
-        mid_grid_layout.addWidget(label_col, 0, 1)
-        mid_grid_layout.addWidget(self.entry_col, 0, 1)
-        mid_grid_layout.addWidget(btn_col_plus, 0, 2)
-        mid_grid_layout.addWidget(btn_col_minus, 0, 3)
-
-        mid_grid_layout.addItem(spacer, 0, 5)
-
-        mid_grid_layout.addWidget(frame_shift, 0, 6, 1, 4)
-        mid_grid_layout.addWidget(label_shift, 0, 6)
-        mid_grid_layout.addWidget(self.entry_shift, 0, 6)
-        mid_grid_layout.addWidget(btn_shift_plus, 0, 7)
-        mid_grid_layout.addWidget(btn_shift_minus, 0, 8)
-
-        mid_grid_layout.addWidget(self.value_btn, 0, 10)
-
-        right_grid_layout.addWidget(copy_btn, 0, 0)
-        right_grid_layout.addWidget(paste_btn, 0, 1)
-        right_grid_layout.addWidget(btn12, 0, 2)
-        right_grid_layout.addWidget(btn13, 0, 3)
-
-        main_layout.addWidget(self.table_view, 0, 0, 1, 2)
-        main_layout.addLayout(left_grid_layout, 1, 0, 1, 2)
-        main_layout.addLayout(mid_grid_layout, 1, 0, 1, 2)
-        main_layout.addLayout(right_grid_layout, 1, 0, 1, 2)
-
-        left_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
-        mid_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter)
-        right_grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+        self.setup_bottom_row(main_layout)
 
         self.tab1.setLayout(main_layout)
 
@@ -692,7 +481,7 @@ class LinOLS(QMainWindow):
             background-color: #444;
             color: white;
             font-family: 'Roboto', sans-serif;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 650;
             padding: 6px;                    
             border: none;
@@ -736,7 +525,7 @@ class LinOLS(QMainWindow):
             border: 2px;
             border-radius: 6px;
             font-family: 'Roboto';
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 680;
             background-color: #555;
             height: 25px;
@@ -866,19 +655,11 @@ class LinOLS(QMainWindow):
 
         btn0 = QPushButton("Copy Map", self)
         btn0.setStyleSheet(button_style)
-        btn0.clicked.connect(self.mode3d.copy_map_values)
+        btn0.clicked.connect(self.mode3d.copy_map)
 
         btn1 = QPushButton("Copy Selected", self)
         btn1.setStyleSheet(button_style)
         btn1.clicked.connect(self.mode3d.copy_selected_3d)
-
-        btn2 = QPushButton("Copy X Axis", self)
-        btn2.setStyleSheet(button_style)
-        btn2.clicked.connect(self.mode3d.copy_x_axis)
-
-        btn3 = QPushButton("Copy Y Axis", self)
-        btn3.setStyleSheet(button_style)
-        btn3.clicked.connect(self.mode3d.copy_y_axis)
 
         btn4 = QPushButton("Update", self)
         btn4.setStyleSheet(button_style)
@@ -887,88 +668,8 @@ class LinOLS(QMainWindow):
         self.diff_btn_3d = QPushButton("Diff: 00000", self)
         self.diff_btn_3d.setStyleSheet(button_style)
 
-        frame_row = QFrame(self)
-        frame_row.setFrameShape(QFrame.Shape.StyledPanel)
-        frame_row.setFrameShadow(QFrame.Shadow.Raised)
-        frame_row.setStyleSheet("""
-            border: 2px solid #888;
-            border-radius: 5px;
-        """)
-
-        frame_row.setFixedHeight(35)
-        frame_row.setFixedWidth(75)
-
-        label_row = QLabel("Row:", frame_row)
-        label_row.setStyleSheet("""
-            border: 0;
-            color: white;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background: transparent;
-            margin-left: 5px;
-        """)
-
-        self.entry_row_3d = QLineEdit(self)
-        self.entry_row_3d.setStyleSheet("""
-            border: 2px;
-            border-radius: 5px;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background-color: #555;
-            height: 25px;
-            width: 28px;
-            margin-left: 41px;
-            color: white;
-        """)
-
-        self.entry_row_3d.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.entry_row_3d.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        frame_col = QFrame(self)
-        frame_col.setFrameShape(QFrame.Shape.StyledPanel)
-        frame_col.setFrameShadow(QFrame.Shadow.Raised)
-        frame_col.setStyleSheet("""
-            border: 2px solid #888;
-            border-radius: 5px;
-        """)
-
-        frame_col.setFixedHeight(35)
-        frame_col.setFixedWidth(75)
-
-        label_col = QLabel("Col:", self)
-        label_col.setStyleSheet("""
-            border: 0;
-            color: white;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background: transparent;
-            margin-left: 5px;
-        """)
-
-        self.entry_col_3d = QLineEdit(self)
-        self.entry_col_3d.setStyleSheet("""
-            border: 2px;
-            border-radius: 5px;
-            font-family: 'Roboto';
-            font-size: 11px;
-            font-weight: 650;
-            background-color: #555;
-            height: 25px;
-            width: 28px;
-            margin-left: 41px;
-            color: white;
-        """)
-
-        self.entry_col_3d.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.entry_col_3d.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        self.entry_row_3d.setReadOnly(True)
-        self.entry_col_3d.setReadOnly(True)
+        self.diff_btn_per_3d = QPushButton("Diff: 0.00%", self)
+        self.diff_btn_per_3d.setStyleSheet(button_style)
 
         self.ori_val_btn_3d = QPushButton("Ori: 00000", self)
         self.ori_val_btn_3d.setStyleSheet(button_style)
@@ -977,47 +678,28 @@ class LinOLS(QMainWindow):
         write_map_btn.setStyleSheet(button_style)
         write_map_btn.clicked.connect(self.maps.write_map)
 
-        btn10 = QPushButton("Paste X Axis", self)
-        btn10.setStyleSheet(button_style)
-        btn10.clicked.connect(lambda: self.mode3d.paste_x_data(False, [], False))
-
-        btn11 = QPushButton("Paste Y Axis", self)
-        btn11.setStyleSheet(button_style)
-        btn11.clicked.connect(lambda: self.mode3d.paste_y_data(False, [], False))
-
         btn12 = QPushButton("Paste Selected", self)
         btn12.setStyleSheet(button_style)
         btn12.clicked.connect(self.mode3d.paste_selected)
 
         btn13 = QPushButton("Paste Map", self)
         btn13.setStyleSheet(button_style)
-        btn13.clicked.connect(lambda: self.mode3d.paste_data(False, [], 0, 0, False, ""))
+        btn13.clicked.connect(self.mode3d.paste_map)
 
         left_grid_layout.addWidget(btn0, 0, 0)
         left_grid_layout.addWidget(btn1, 0, 1)
-        left_grid_layout.addWidget(btn2, 0, 2)
-        left_grid_layout.addWidget(btn3, 0, 3)
 
         mid_grid_layout.addWidget(btn4, 0, 0)
         mid_grid_layout.addWidget(self.diff_btn_3d, 0, 1)
+        mid_grid_layout.addWidget(self.diff_btn_per_3d, 0, 2)
+        mid_grid_layout.addWidget(self.ori_val_btn_3d, 0, 3)
+        mid_grid_layout.addWidget(write_map_btn, 0, 4)
 
-        mid_grid_layout.addWidget(frame_row, 0, 2)
-        mid_grid_layout.addWidget(label_row, 0, 2)
-        mid_grid_layout.addWidget(self.entry_row_3d, 0, 2)
-
-        mid_grid_layout.addWidget(frame_col, 0, 3)
-        mid_grid_layout.addWidget(label_col, 0, 3)
-        mid_grid_layout.addWidget(self.entry_col_3d, 0, 3)
-
-        mid_grid_layout.addWidget(self.ori_val_btn_3d, 0, 4)
-        mid_grid_layout.addWidget(write_map_btn, 0, 5)
-
-        right_grid_layout.addWidget(btn10, 0, 0)
-        right_grid_layout.addWidget(btn11, 0, 1)
-        right_grid_layout.addWidget(btn12, 0, 2)
-        right_grid_layout.addWidget(btn13, 0, 3)
+        right_grid_layout.addWidget(btn12, 0, 0)
+        right_grid_layout.addWidget(btn13, 0, 1)
 
         self.box_layout = CustomTableWidget(self)
+
         self.box_layout.setRowCount(self.num_rows_3d)
         self.box_layout.setColumnCount(self.num_columns_3d)
 
@@ -1086,24 +768,34 @@ class LinOLS(QMainWindow):
                 color: white;
             }
             QMenuBar::item {
-                padding: 10px;
                 background-color: #333;
+                color: white;
+                padding: 10px;
             }
             QMenuBar::item:selected {
                 background-color: #555;
+                color: white;
             }
             QMenuBar::item:pressed {
                 background-color: #777;
+                color: white;
             }
+
             QMenu {
+                background-color: #333;
+                color: white;
+            }
+            QMenu::item {
                 background-color: #333;
                 color: white;
             }
             QMenu::item:selected {
                 background-color: #555;
+                color: white;
             }
             QMenu::item:pressed {
                 background-color: #777;
+                color: white;
             }
         """)
 
@@ -1188,7 +880,7 @@ class QTableModel(QAbstractTableModel):
         super().__init__(parent)
         self.linols = parent
         self._data = [list(row) for row in data]
-        self._vertical_header_labels = []  # Initialize vertical header labels
+        self._vertical_header_labels = []
         self.undo_stack = []
         self.redo_stack = []
 
@@ -1287,7 +979,7 @@ class QTableModel(QAbstractTableModel):
 
     def undo_changes(self):
         if not self.linols.file_path:
-            QMessageBox.warning(None, "Warning", "No file is currently open. Please open a file first.")
+            QMessageBox.warning(self.linols, "Warning", "No file is currently open. Please open a file first.")
             return
 
         if not self.undo_stack:
@@ -1305,7 +997,7 @@ class QTableModel(QAbstractTableModel):
 
     def redo_changes(self):
         if not self.linols.file_path:
-            QMessageBox.warning(None, "Warning", "No file is currently open. Please open a file first.")
+            QMessageBox.warning(self.linols, "Warning", "No file is currently open. Please open a file first.")
             return
 
         if not self.redo_stack:
@@ -1348,7 +1040,7 @@ class CustomTableView(QTableView):
         if frame_before != self.linols.current_frame:
             self.linols.sync_2d_scroll = True
             self.linols.mode2d.draw_canvas(self.linols)
-            
+
     def get_first_visible_index(self):
         visible_rect = self.viewport().geometry()
         first_visible_row = self.indexAt(visible_rect.topLeft()).row()
@@ -1360,6 +1052,10 @@ class CustomTableView(QTableView):
         super().keyPressEvent(event)
         if event.key() in [Qt.Key.Key_PageUp, Qt.Key.Key_PageDown]: # Track when Page Up or Page Down is pressed
             self.on_scroll()
+
+    def keyReleaseEvent(self, event):
+        self.linols.text_addons.on_selection()
+        super().keyReleaseEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -1375,23 +1071,46 @@ class CustomTableView(QTableView):
         selection_model = self.linols.table_view.selectionModel()
         selected_indexes_count = len(selection_model.selectedIndexes())
 
-        if selected_indexes_count != 1:
+        if selected_indexes_count < 1:
             return
 
         right_menu = QMenu(self.parent())
 
-        copy_hex = QAction("Copy Hex Address", self)
+        copy_text = QAction("Copy (Ctrl+C)", self)
+        paste_text = QAction("Paste (Ctrl+V)", self)
+        undo_text = QAction("Undo (Ctrl+Z)", self)
+        redo_text = QAction("Redo (Ctrl+Y)", self)
         open_map_action = QAction("Open Map", self)
+        add_map = QAction("Add map (k)")
+        text_to_2d = QAction("Text to 2D")
+
+        copy_hex = QAction("Copy Hex Address", self)
         add_potential_map_action = QAction("Add Potential Map", self)
         remove_potential_map_action = QAction("Remove Potential Map", self)
 
-        copy_hex.triggered.connect(self.linols.text_addons.copy_hex_address)
+        copy_text.triggered.connect(lambda: self.linols.text_addons.copy_values(False))
+        paste_text.triggered.connect(self.linols.text_addons.paste_values)
+        undo_text.triggered.connect(self.linols.model.undo_changes)
+        redo_text.triggered.connect(self.linols.model.redo_changes)
         open_map_action.triggered.connect(self.linols.maps.open_map_right_click)
+        add_map.triggered.connect(self.linols.maps.add_map)
+        text_to_2d.triggered.connect(lambda: self.linols.mode2d.text_to_2d(self.linols))
+
+        copy_hex.triggered.connect(self.linols.text_addons.copy_hex_address)
         add_potential_map_action.triggered.connect(self.linols.maps.add_potential_map)
         remove_potential_map_action.triggered.connect(self.linols.maps.remove_potential_map)
 
-        right_menu.addAction(copy_hex)
+        right_menu.addAction(copy_text)
+        right_menu.addAction(paste_text)
+        right_menu.addAction(undo_text)
+        right_menu.addAction(redo_text)
         right_menu.addAction(open_map_action)
+        right_menu.addAction(add_map)
+        right_menu.addAction(text_to_2d)
+
+        right_menu.addSeparator()
+
+        right_menu.addAction(copy_hex)
         right_menu.addAction(add_potential_map_action)
         right_menu.addAction(remove_potential_map_action)
 
@@ -1408,7 +1127,7 @@ class CustomTableView(QTableView):
     def on_f11_pressed(self):
         selection_model = self.linols.table_view.selectionModel()
         selected_indexes = selection_model.selectedIndexes()
-        
+
         temp_list = list(self.linols.current_values)
 
         for item in selected_indexes:
@@ -1424,7 +1143,7 @@ class CustomTableView(QTableView):
 
         rows = [self.linols.current_values[i:i + self.linols.columns] for i in
                 range(0, len(self.linols.current_values) - self.linols.columns, self.linols.columns)]  # get values by rows
-                
+
         remaining_elements = len(self.linols.current_values) % self.linols.columns  # last row offset
 
         if remaining_elements:
@@ -1449,7 +1168,7 @@ class CustomListBox(QListWidget):
         remove_action = QAction("Remove", self)
         remove_action.triggered.connect(self.ui.maps.remove_item)
         context_menu.addAction(remove_action)
-        
+
         show_action = QAction("Show in Text", self)
         show_action.triggered.connect(self.ui.maps.show_map_in_text)
         context_menu.addAction(show_action)
@@ -1471,18 +1190,35 @@ class CustomTableWidget(QTableWidget):
         self.verticalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.verticalHeader().customContextMenuRequested.connect(self.showVerticalHeaderContextMenu)
 
-
     def contextMenuEvent(self, event):
         context_menu = QMenu(self)
 
-        action_prop = QAction("Map Properties", self)
+        copy_map_action = QAction("Copy Map (Ctrl+Shift+C)", self)
+        context_menu.addAction(copy_map_action)
+        copy_map_action.triggered.connect(self.ui.mode3d.copy_map)
+
+        copy_selected_action = QAction("Copy selected (Ctrl+C)", self)
+        context_menu.addAction(copy_selected_action)
+        copy_selected_action.triggered.connect(self.ui.mode3d.copy_selected_3d)
+
+        paste_map_action = QAction("Paste Map (Ctrl+Shift+V)", self)
+        context_menu.addAction(paste_map_action)
+        paste_map_action.triggered.connect(self.ui.mode3d.paste_map)
+
+        paste_selected_action = QAction("Paste selected (Ctrl+V)", self)
+        context_menu.addAction(paste_selected_action)
+        paste_selected_action.triggered.connect(self.ui.mode3d.paste_selected)
+
+        context_menu.addSeparator()
+
+        action_prop = QAction("Map Properties (Alt+Enter)", self)
         context_menu.addAction(action_prop)
         action_prop.triggered.connect(lambda: self.ui.maps.map_properties_dialog("map"))
-        
+
         action_sign_values = QAction("Sign Values 3D", self)
         context_menu.addAction(action_sign_values)
         action_sign_values.triggered.connect(self.ui.maps.sign_values)
-        
+
         value_dialog_action = QAction("Value Dialog", self)
         context_menu.addAction(value_dialog_action)
         value_dialog_action.triggered.connect(self.ui.maps.value_changer_dialog)
@@ -1500,9 +1236,9 @@ class CustomTableWidget(QTableWidget):
         action = context_menu.addAction(f"Y-Axis Properties")
         action.triggered.connect(lambda: self.ui.maps.map_properties_dialog("y"))
         context_menu.exec(self.verticalHeader().mapToGlobal(pos))
-        
+
     def keyPressEvent(self, event):
-        if event.key() == 16777274: # check if the F11 is pressed
+        if event.key() == 16777274:  # check if the F11 is pressed
             self.on_f11_pressed()
         else:
             super().keyPressEvent(event)

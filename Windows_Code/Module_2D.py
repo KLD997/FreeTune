@@ -17,6 +17,9 @@ class Mode2D:
     def draw_canvas(self, ui):
         self.ui = ui
 
+        if not self.ui.file_path:
+            return
+
         if self.ui.disable_2d_canvas:
             return
 
@@ -43,9 +46,8 @@ class Mode2D:
             segments = np.split(differing_indices, np.where(np.diff(differing_indices) != 1)[0] + 1)
 
             for segment in segments:
-                # Expand segment to include one value before and after, safely
                 start = max(segment[0] - 1, 0)
-                end = min(segment[-1] + 2, len(scaled_data_mod))  # +2 because slicing is exclusive at the end
+                end = min(segment[-1] + 2, len(scaled_data_mod))
                 extended_segment = np.arange(start, end)
 
                 self.ui.ax.plot(extended_segment, scaled_data_mod[extended_segment], color="red", linewidth=0.5)
@@ -125,7 +127,7 @@ class Mode2D:
             self.highlight_text(self.ui.red_line, False)
             self.draw_canvas(self.ui)
 
-    def highlight_text(self, x, find_on):
+    def highlight_text(self, x, find_on, text_on = False):
         x += self.ui.shift_count
         if self.ui.current_frame > 0 and not find_on:
             value_index = x + self.ui.current_frame
@@ -137,8 +139,9 @@ class Mode2D:
         row = value_index // self.ui.columns
         col = (value_index % self.ui.columns)
         # scroll to highlight
-        index_sel = self.ui.model.index(row, col)
-        self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
+        if not text_on:
+            index_sel = self.ui.model.index(row, col)
+            self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
 
         index = self.ui.model.index(row, col)
         selection_model = self.ui.table_view.selectionModel()
@@ -254,7 +257,7 @@ class Mode2D:
 
             self.ui.red_line = int(index) - self.ui.current_frame
 
-            self.highlight_text(index, True)
+            self.highlight_text(index, True, True)
 
             value = self.ui.current_values[index + self.ui.shift_count]
             self.ui.value_btn_2d.setText(f"Value: {value:05}")
@@ -285,7 +288,7 @@ class Mode2D:
 
         self.draw_canvas(self.ui)
 
-    def on_key_press_2d(self, event): # change later
+    def on_key_press_2d(self, event):
         pressed_key = event.key
 
         if pressed_key == "n":
@@ -300,6 +303,9 @@ class Mode2D:
     def value_changes_skipping(self, forward):
         selection_model = self.ui.table_view.selectionModel()
         selected_indexes = selection_model.selectedIndexes()
+
+        if not selected_indexes:
+            return
 
         found_value_index = None
 
@@ -330,6 +336,35 @@ class Mode2D:
                     while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
                         found_value_index -= 1
                         i -= 1
+                    found_value_index += 1
+                    break
+
+        if found_value_index is None:
+            QMessageBox.warning(self.ui, "Warning", "No values found!")
+            return
+
+        self.ui.mode2d.highlight_text(found_value_index - self.ui.shift_count, True)
+        self.ui.mode2d.text_to_2d(self.ui)
+
+    def first_last_changed_value(self, first):
+        found_value_index = None
+
+        if first:
+            for i in range(0, len(self.ui.current_values)):
+                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
+                    found_value_index = i
+                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
+                        found_value_index += 1
+                        i += 1
+                    found_value_index -= 1
+                    break
+        else:
+            for i in range(len(self.ui.current_values) - 1, -1, -1):
+                if self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
+                    found_value_index = i
+                    while self.ui.current_values[i] != self.ui.unpacked[i - self.ui.shift_count] and self.ui.current_values[i] is not None:
+                        found_value_index -= 1
+                        i += 1
                     found_value_index += 1
                     break
 

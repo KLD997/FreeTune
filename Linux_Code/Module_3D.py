@@ -7,8 +7,6 @@ class Mode3D:
     def __init__(self, ui):
         self.ui = ui
         self.map_precision = 0
-        self.x_precision = 0
-        self.y_precision = 0
 
     def copy_selected_3d(self):
         if not self.check_selection_rectangle_3d() and not self.check_selection_consecutive_3d():
@@ -238,8 +236,7 @@ class Mode3D:
 
     def paste_data(self, maps_sel, data, row, col, new, name):
         if maps_sel:
-            from maps import Maps_Utility
-            maps = Maps_Utility(self.ui)
+            maps = self.ui.maps
             with open(maps.file_path, 'r') as file:
                 content = file.read().split('\n')
                 for i in range(len(content)):
@@ -247,6 +244,7 @@ class Mode3D:
                         try:
                             map_factor = float(content[i + 4])
                             self.map_precision = int(content[i + 5])
+                            x_precision = int(content[i + 7])
                             break
                         except ValueError:
                             QMessageBox.warning(self.ui, "Warning",
@@ -292,10 +290,7 @@ class Mode3D:
                     index += 1
                     self.ui.box_layout.item(i, j).setForeground(QColor("white"))
 
-            self.adjust_row_width()
-
-            self.ui.entry_row_3d.setText(f"{row:02}")
-            self.ui.entry_col_3d.setText(f"{col:02}")
+            self.adjust_row_width(x_precision)
         else:
             clipboard = QApplication.clipboard()
             clipboard_text = clipboard.text()  # get text from clipboard
@@ -356,8 +351,7 @@ class Mode3D:
 
     def paste_x_data(self, maps, data, new):
         if maps:
-            from maps import Maps_Utility
-            maps = Maps_Utility(self.ui)
+            maps = self.ui.maps
             with open(maps.file_path, 'r') as file:
                 content = file.read().split('\n')
             index = maps.last_map_index
@@ -365,7 +359,7 @@ class Mode3D:
 
             try:
                 x_factor = float(content[index + 6])
-                self.x_precision = int(content[index + 7])
+                x_precision = int(content[index + 7])
             except ValueError:
                 QMessageBox.warning(self.ui, "Warning",
                                     "There is a problem with the mappack file. It appears to have been modified by an user."
@@ -383,13 +377,13 @@ class Mode3D:
                 if x_factor != 1.0:
                     data[i] *= x_factor
                 self.ui.x_values.append(data[i])
-                if self.x_precision != 0:
-                    new_data = float(round(data[i], self.x_precision))
+                if x_precision != 0:
+                    new_data = float(round(data[i], x_precision))
                     parts = str(new_data).split('.')
                     decimal_length = len(parts[1])
                     str_data = str(new_data)
-                    if decimal_length < self.x_precision:
-                        for x in range(self.x_precision - decimal_length):
+                    if decimal_length < x_precision:
+                        for x in range(x_precision - decimal_length):
                             str_data += "0"
                     x_decimal = True
                 else:
@@ -409,7 +403,7 @@ class Mode3D:
                     if not new:
                         self.ui.original_x[i] = float(self.ui.box_layout.horizontalHeaderItem(i).text().strip())
 
-            self.adjust_row_width()
+            self.adjust_row_width(x_precision)
         else:
             clipboard = QApplication.clipboard()
             clipboard_text = clipboard.text()  # get text from clipboard
@@ -438,8 +432,7 @@ class Mode3D:
 
     def paste_y_data(self, maps, data, new):
         if maps:
-            from maps import Maps_Utility
-            maps = Maps_Utility(self.ui)
+            maps = self.ui.maps
             with open(maps.file_path, 'r') as file:
                 content = file.read().split('\n')
             index = maps.last_map_index
@@ -447,7 +440,7 @@ class Mode3D:
 
             try:
                 y_factor = float(content[index + 8])
-                self.y_precision = int(content[index + 9])
+                y_precision = int(content[index + 9])
             except ValueError:
                 QMessageBox.warning(self.ui, "Warning",
                                     "There is a problem with the mappack file. It appears to have been modified by an user."
@@ -465,13 +458,13 @@ class Mode3D:
                 if y_factor != 1.0:
                     data[i] *= y_factor
                 self.ui.y_values.append(data[i])
-                if self.y_precision != 0.0:
-                    new_data = float(round(data[i], self.y_precision))
+                if y_precision != 0.0:
+                    new_data = float(round(data[i], y_precision))
                     parts = str(new_data).split('.')
                     decimal_length = len(parts[1])
                     str_data = str(new_data)
-                    if decimal_length < self.y_precision:
-                        for x in range(self.y_precision - decimal_length):
+                    if decimal_length < y_precision:
+                        for x in range(y_precision - decimal_length):
                             str_data += "0"
                     y_decimal = True
                 else:
@@ -491,7 +484,7 @@ class Mode3D:
 
             add_width_y = 0
             if self.ui.y_axis_decimal:
-                for y in range(self.y_precision):
+                for y in range(y_precision):
                     if y > 0:
                         add_width_y += 10
                     else:
@@ -523,7 +516,7 @@ class Mode3D:
                 item.setText(f"{int_val:05}")
                 self.check_difference_y(i)
 
-    def adjust_row_width(self):
+    def adjust_row_width(self, x_precision):
         add_width_map = 0
         if self.ui.map_decimal:
             for i in range(self.map_precision):
@@ -534,7 +527,7 @@ class Mode3D:
 
         add_width_x = 0
         if self.ui.x_axis_decimal:
-            for i in range(self.x_precision):
+            for i in range(x_precision):
                 if i > 0:
                     add_width_x += 10
                 else:
@@ -633,50 +626,75 @@ class Mode3D:
         else:
             entry.setForeground(QColor("white"))
 
-    def copy_map_values(self):
-        map_values = ""
+    def paste_map(self):
         clipboard = QApplication.clipboard()
-        clipboard.clear()
+        clipboard_text = clipboard.text()
 
-        for i in range(self.ui.box_layout.rowCount()):
-            row_values = []
-            for j in range(self.ui.box_layout.columnCount()):
-                entry = self.ui.box_layout.item(i, j)
-                row_values.append(entry.text())
+        striped_text = [list(re.split(r'[\t]+', line)) for line in clipboard_text.strip().split('\n')]
 
-            map_values += "\t".join(row_values)
-            if i < self.ui.box_layout.rowCount() - 1:
-                map_values += "\n"
+        x_axis_data = striped_text[0]
+
+        x_axis_text = '\t'.join([text for text in x_axis_data])
+
+        clipboard.setText(x_axis_text)
+
+        self.paste_x_data(False, [], False)
+
+        y_axis_text = '\n'.join([striped_text[i][0] for i in range(1, len(striped_text) - 1)] + [striped_text[-1][0]])
+
+        clipboard.setText(y_axis_text)
+
+        self.paste_y_data(False, [], False)
+
+        map_values = ""
+        for i in range(1, len(striped_text)):
+            row_text = '\t'.join(striped_text[i][1:])
+            map_values += row_text + '\n'
 
         clipboard.setText(map_values)
 
+        self.paste_data(False, [], 0, 0, False, "")
 
-    def copy_x_axis(self):
+        clipboard.setText(clipboard_text)
+
+    def copy_map(self):
         clipboard = QApplication.clipboard()
         clipboard.clear()
 
+        x_axis_values = self.copy_x_axis()
+        y_axis_values = self.copy_y_axis()
+
+        map_values = "\t" + "\t".join(x_axis_values) + "\n"
+
+        for i in range(self.ui.box_layout.rowCount()):
+            row_values = [y_axis_values[i]]
+            for j in range(self.ui.box_layout.columnCount()):
+                entry = self.ui.box_layout.item(i, j)
+                if entry is not None:
+                    row_values.append(entry.text())
+                else:
+                    row_values.append("")
+
+            map_values += "\t".join(row_values) + "\n"
+
+        clipboard.setText(map_values.strip('\n'))
+
+    def copy_x_axis(self):
         values_data = []
         for col in range(self.ui.num_columns_3d):
             value = self.ui.box_layout.horizontalHeaderItem(col).text()
             values_data.append(value)
 
-        x_axis_values = "\t".join(values_data)
-
-        clipboard.setText(x_axis_values)
+        return values_data
 
 
     def copy_y_axis(self):
-        clipboard = QApplication.clipboard()
-        clipboard.clear()
-
         values_data = []
         for row in range(self.ui.num_rows_3d):
             value = self.ui.box_layout.verticalHeaderItem(row).text()
             values_data.append(value)
 
-        y_axis_values = "\n".join(values_data)
-
-        clipboard.setText(y_axis_values)
+        return values_data
 
     def check_all(self):
         rows = self.ui.num_rows_3d
@@ -724,9 +742,12 @@ class Mode3D:
                                                         "There is a problem with the mappack file. It appears to have been modified by an user."
                                                         "\nPlease restart the application!")
                                     return
-                    item.setText(f"{int(float_value):05}.{'0' * precision}")
+
+                    new_value = f"{int(float_value):05}.{'0' * precision}"
+                    item.setText(new_value)
                 else:
-                    item.setText(f"{int(float_value):05}")
+                    new_value = f"{int(float_value):05}"
+                    item.setText(new_value)
 
         except ValueError:
             value_ori = float(self.ui.original[row][col])
@@ -787,10 +808,6 @@ class Mode3D:
 
         for col in range(self.ui.num_columns_3d): # change column width
             self.ui.box_layout.setColumnWidth(col, self.ui.column_width_3d)
-
-        # set rows and columns entry boxes
-        self.ui.entry_row_3d.setText(f"{self.ui.num_rows_3d:02}")
-        self.ui.entry_col_3d.setText(f"{self.ui.num_columns_3d:02}")
 
         self.ui.map_opened = False
 
@@ -898,13 +915,24 @@ class Mode3D:
                 else:
                     parts = str(diff_value).split('.')
                     self.ui.diff_btn_3d.setText(f"Diff: {int(parts[0]):05}.{parts[1]}")
+                current_val = float(item_text)
+                if current_val != 0 and ori_val != 0:
+                    percentage_change = min(((current_val / ori_val) - 1) * 100, 999.99)
+                    self.ui.diff_btn_per_3d.setText(f"Diff: {percentage_change:.2f}%")
+                else:
+                    if current_val == ori_val:
+                        self.ui.diff_btn_per_3d.setText(f"Diff: 0.00%")
+                    else:
+                        self.ui.diff_btn_per_3d.setText(f"Diff: 100.00%")
             else:
                 self.ui.diff_btn_3d.setText("Diff: 00000")
+                self.ui.diff_btn_per_3d.setText(f"Diff: 0.00%")
 
             self.ui.ori_val_btn_3d.setText(f"Ori: {int(ori_val):05}")
         else:
             self.ui.diff_btn_3d.setText("Diff: 00000")
             self.ui.ori_val_btn_3d.setText(f"Ori: 00000")
+            self.ui.diff_btn_per_3d.setText(f"Diff: 0.00%")
 
     def edit_horizontal_header(self, index):
         current_text = self.ui.box_layout.horizontalHeaderItem(index).text()

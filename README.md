@@ -127,10 +127,17 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   ### Text Tab
   You can select multiple numbers with holding the `left click` and then draging with your mouse.
 
-  You can select one value and right click on text widget to `Copy Hex Address`, `Open Map`, `Add Potential Map` or `Remove Potential Map`.
+  You can select one value and right click on text widget to open a `context menu`.
+
+  `Copy` is used for copying values into Excel or LibreCalc
+  `Paste` is used for pasting values from Excel or LibreCalc into your file.
+  `Undo` for undoing any changes.
+  `Redo` for redoing any changes.
+  `Open Map` - Open a map if the selected value is a map value.
+  `Add Map` is used for adding a new map.
+  `Text to 2D` is used to show where the selected value or values are in 2d mode.
 
   `Copy Hex Address` - Copies hex address of a selected value. 
-  `Open Map` - Open a map if the selected value is a map value.
   `Add Potential Map` - Adds a potential map to your user maps.
   `Remove Potential Map` - Removes a potential map from your project.
   
@@ -138,27 +145,31 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   
   You can use 'Page Up' and 'Page Down' for faster navigation.
 
-  `16-bit Lo-Hi and 16-Bit Hi-Lo` are for chaning the byte order and changing the mode will ERASE any changes done.
+  You can use `Ctrl + Z` for `undo` and `Ctrl + Y` for `redo`.
 
-  `Add Map` is used for adding a new map
+  `Selected: #` label is for showing you how many numbers do you have selected currently
 
-  `Text to 2D` is used to show where the selected value or values are in 2d mode.
+  `Columns: #` is used for showing the number of columns.
 
-  `Selected: #` button is for showing you how many numbers do you have selected currently
+  `Shift: #` is used for showing the shift value which basicly moves every value for x times to the right.
 
-  `Columns box` is used for changing the number of columns.
+  `Ori: #` label is for showing the original value of the selected value.
 
-  `Shift box` is used for changing the shift value which basicly moves every value for x times to the right.
+  #### Toolbar
+  `|<<` is used for showing the first value.
+  `<<` is used for showing a previous value.
+  `|||` is used for opening a `Difference` dialog
+  `>>` is used for showing a next value.
+  `>>|` is used for showing the last value.
 
-  `Ori: #` buttion is for showing the original value of the selected value.
+  `LOHI and HILO` are for chaning the byte order and changing the mode will ERASE any changes done.
 
-  `Copy` is used for copying values into Excel or LibreCalc
+  `Search icon` is used for opening the `Find` dialog.
 
-  `Paste` is used for pasting values from Excel or LibreCalc into your file.
+  `Circled arrow` is used to open `Find Hex Address` dialog.
 
-  `Undo` for undoing any changes.
+  `Column icons` are used as described in the description of each individual icon. The description can be accessed by hovering your mouse over the selected icon.
 
-  `Redo` for redoing any changes.
 
   ### 2D Tab
   You can select a number on 2d canva and you will automaticly show you that number in text mode.
@@ -192,14 +203,10 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`.
 
-  `Copy Map` copy the values of the map without axis to clipboard.
+  `Copy Map` copy the values of the map, including both axis to clipboard.
 
   `Copy Selected` is used to copy selected values to clipboard.
   
-  `Copy X Axis` is used to copy whole X axis to clipboard.
-
-  `Copy Y Axis` is used to copy whole Y axis to clipboard.
-
   `Update` is used to update values from text view to 3d view.
 
   `Diff: 0` Shows what is the change on the selected value.
@@ -210,13 +217,9 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Write Map` is used to transfer values from 3d grid to text view, so update them.
 
-  `Paste X Axis` is used to paste whole X axis to 3d grid.
-
-  `Paste Y Axis` is used to paste whole Y axis to 3d grid.
-
   `Paste Selected` is used to paste values from clipboard to the location of the starting value / ONE selected value.
 
-  `Paste Map` is used to paste the map to 3d grid, excluding both axis.
+  `Paste Map` is used to paste the map to 3d grid, including both axis.
 
   ### Maps Tab
   `Maps Tab` is used to show all of the created or imported maps.
@@ -262,3 +265,14 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   `m` - increase number of columns by one
 
   `k` - add a new map
+
+## Acknowledgments
+
+Some icons/images used in this project are sourced from:
+
+- **CleanPNG**: [https://www.cleanpng.com/](https://www.cleanpng.com/)
+- **Heroicons**: [https://heroicons.com/](https://heroicons.com/) (licensed under the MIT License)
+- **SVGrepo** : [https://www.svgrepo.com/](https://www.svgrepo.com/) (licensed under the MIT License)
+
+### Modifications
+- Some icons have been modified in terms of color and size to fit the design of this project.

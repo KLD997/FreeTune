@@ -53,9 +53,9 @@ class Map_Name_Dialog(QDialog):
         self.setFixedSize(250, 120)
 
         self.ui = parent
-        self.setWindowIcon(self.ui.logo_icon)
-
         self.local_parent = local_parent
+
+        self.setWindowIcon(self.ui.logo_icon)
 
         screen = QApplication.primaryScreen()
         screen_rect = screen.availableGeometry()

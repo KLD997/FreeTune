@@ -1,5 +1,4 @@
 from PyQt6.QtWidgets import QMessageBox, QApplication, QTableView, QFileDialog
-from PyQt6.QtCore import Qt
 import time
 import struct
 
@@ -40,7 +39,7 @@ class TextAddons:
             selection_model.clearSelection()
             selected_indexes_count = len(selection_model.selectedIndexes())
 
-        self.ui.sel_btn.setText(f"Selected: {selected_indexes_count}")
+        self.ui.sel_label.setText(f"Selected: {selected_indexes_count}")
 
     def update_ori_label(self):
         selection_model = self.ui.table_view.selectionModel()
@@ -50,13 +49,25 @@ class TextAddons:
             selected_index = selected_indexes[0]
             row = selected_index.row()
             col = selected_index.column()
+            current_item = int(selected_index.data())
             index = (row * self.ui.columns) + col
             if index <= len(self.ui.unpacked):
-                self.ui.value_btn.setText(f"Ori: {self.ui.unpacked[index - self.ui.shift_count]:05}")
+                ori_value = self.ui.unpacked[index - self.ui.shift_count]
+                self.ui.value_label.setText(f"Ori: {ori_value:05}")
+                if current_item != 0 and ori_value != 0:
+                    percentage_change = min(((current_item / ori_value) - 1) * 100, 999.99)
+                    self.ui.difference_label.setText(f"{current_item - ori_value} ({percentage_change:.2f}%)")
+                else:
+                    if current_item == ori_value:
+                        self.ui.difference_label.setText(f"0 (0.00%)")
+                    else:
+                        self.ui.difference_label.setText(f"{current_item - ori_value} (100.00%)")
             else:
-                self.ui.value_btn.setText("Ori: 00000")
+                self.ui.value_label.setText("Ori: 00000")
+                self.ui.difference_label.setText(f"0 (0.00%)")
         else:
-            self.ui.value_btn.setText("Ori: 00000")
+            self.ui.value_label.setText("Ori: 00000")
+            self.ui.difference_label.setText(f"0 (0.00%)")
 
     def copy_hex_address(self):
         selection_model = self.ui.table_view.selectionModel()
@@ -314,12 +325,11 @@ class TextAddons:
             QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
             return
 
-        time_col_now = time.time()
-
-        if self.time_col + 0.5 >= time_col_now:
+        current_time = time.time()
+        if self.time_col + 0.5 >= current_time:
             return
 
-        self.time_col = time.time()
+        self.time_col = current_time
 
         selection_model = self.ui.table_view.selectionModel()
         selected_indexes = selection_model.selectedIndexes()
@@ -327,19 +337,20 @@ class TextAddons:
         if selected_indexes:
             current_row = selected_indexes[0].row()
             current_col = selected_indexes[0].column()
-
             index = (current_row * self.ui.columns) + current_col
         else:
             index = self.ui.table_view.get_first_visible_index()
 
-        if mode == "+" and self.ui.columns <= 50:
+        if mode == "+" and self.ui.columns < 50:
             self.ui.columns += 1
         elif mode == "-" and self.ui.columns > 1:
             self.ui.columns -= 1
+        else:
+            return
 
         if self.ui.columns == self.ui.shift_count:
             self.ui.shift_count -= 1
-            self.ui.entry_shift.setText(f"{self.ui.shift_count:02}")
+            self.ui.entry_shift.setText(f"Shift: {self.ui.shift_count:02}")
 
         values = self.ui.model.get_all_data()
 
@@ -354,30 +365,24 @@ class TextAddons:
                     self.ui.current_values.append(col)
 
         rows = [self.ui.current_values[i:i + self.ui.columns] for i in
-                     range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
+                range(0, len(self.ui.current_values), self.ui.columns)]
 
-        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
-
-        if remaining_elements:
-            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
-                    self.ui.columns - remaining_elements)  # last row values
-            rows.append(last_row)
+        if len(rows[-1]) < self.ui.columns:
+            rows[-1].extend([None] * (self.ui.columns - len(rows[-1])))
 
         self.ui.model.set_data(rows)
         self.ui.model.layoutChanged.emit()
 
         from text_view import TextView
         text_view = TextView(self.ui)
-
         text_view.set_labels_y_axis()
         text_view.set_column_width()
 
-        self.ui.entry_col.setText(f"{self.ui.columns:02}")
+        self.ui.entry_col.setText(f"Columns: {self.ui.columns:02}")
 
         if self.ui.current_values[index] is None:
-            while self.ui.current_values[index] is not None:
+            while index < len(self.ui.current_values) and self.ui.current_values[index] is None:
                 index += 1
-            index += self.ui.shift_count
 
         self.ui.mode2d.highlight_text(index - self.ui.shift_count, True)
 
@@ -391,6 +396,16 @@ class TextAddons:
         if self.time_shift + 0.5 >= time_shift_now:
             return
 
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+
+        if selected_indexes:
+            current_row = selected_indexes[0].row()
+            current_col = selected_indexes[0].column()
+            index = (current_row * self.ui.columns) + current_col
+        else:
+            index = self.ui.table_view.get_first_visible_index()
+
         if mode == "+" and self.ui.shift_count + 1 < self.ui.columns:
             self.ui.shift_count += 1
             for i in range(len(self.ui.potential_maps_start)):
@@ -401,6 +416,8 @@ class TextAddons:
             for i in range(len(self.ui.potential_maps_start)):
                 self.ui.potential_maps_start[i] -= 1
                 self.ui.potential_maps_end[i] -= 1
+        else:
+            return
 
         values = self.ui.model.get_all_data()
 
@@ -433,7 +450,14 @@ class TextAddons:
         text_view.set_labels_y_axis()
         text_view.set_column_width()
 
-        self.ui.entry_shift.setText(f"{self.ui.shift_count:02}")
+        self.ui.entry_shift.setText(f"Shift: {self.ui.shift_count:02}")
+
+        if self.ui.current_values[index] is None:
+            while index < len(self.ui.current_values) and self.ui.current_values[index] is None:
+                index += 1
+            index -= 1
+
+        self.ui.mode2d.highlight_text(index - self.ui.shift_count + (1 if mode == "+" else -1), True)
 
     def on_tab_changed(self, index):
         if index == 0:
@@ -443,8 +467,7 @@ class TextAddons:
         if index == 1:
             self.ui.disable_2d_canvas = False
             self.ui.sync_2d_scroll = False
-            if self.ui.file_path:
-                self.ui.mode2d.draw_canvas(self.ui)
+            self.ui.mode2d.draw_canvas(self.ui)
         else:
             self.ui.disable_2d_canvas = True
             self.ui.sync_2d_scroll = True
@@ -468,11 +491,18 @@ class TextAddons:
         with open(import_file_path, 'rb') as file:
             content = file.read()
             if self.ui.low_high:
-                self.ui.current_values = struct.unpack('<' + 'H' * (len(content) // 2), content)
+                values = struct.unpack('<' + 'H' * (len(content) // 2), content)
             else:
-                self.ui.current_values = struct.unpack('>' + 'H' * (len(content) // 2), content)
+                values = struct.unpack('>' + 'H' * (len(content) // 2), content)
 
-        self.ui.current_values = (None,) * self.ui.shift_count + self.ui.current_values
+        self.ui.current_values = []
+
+        for i in range(self.ui.shift_count):
+            self.ui.current_values.append(None)
+
+        for item in values:
+            if item is not None:
+                self.ui.current_values.append(item)
 
         rows = [self.ui.current_values[i:i + self.ui.columns] for i in
                 range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
@@ -638,8 +668,7 @@ class TextAddons:
             return
         from custom_dialogs.value_dialog import ValueDialog
         dialog = ValueDialog(self.ui)
-
-        self.ui.dialog_manager.open_dialog(dialog)
+        dialog.exec()
 
     def open_hex_address_dialog(self):
         if not self.ui.file_path:
