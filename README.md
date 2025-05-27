@@ -145,8 +145,6 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   
   You can use 'Page Up' and 'Page Down' for faster navigation.
 
-  You can use `Ctrl + Z` for `undo` and `Ctrl + Y` for `redo`.
-
   `Selected: #` label is for showing you how many numbers do you have selected currently
 
   `Columns: #` is used for showing the number of columns.
@@ -250,10 +248,28 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   `Export Mappack` is used to export mappack / `.mp` files.  
 
   ### Shortcuts
-  Skip to the next changed value in 2d mode - `n` or `N`
+  Skip to the next changed value - `n`
   
-  Ship to the previous changed value in 2d mode - `v` or `V`
+  Ship to the previous changed value - `v`
 
+  Ship to the first changed value - `e`
+
+  Ship to the last changed value - `l`
+
+  `Ctrl+Z` - undo
+  
+  `Ctrl+Y` - redo
+
+  `Ctrl+U` - difference dialog
+
+  `Ctrl+C` - copy selected
+  
+  `Ctrl+V` - paste selected
+
+  `Ctrl+Shift+C` - copy whole map in `3D` tab
+  
+  `Ctrl+Shift+V` - paste whole map in `3D` tab
+  
   `Ctrl+F` - find dialog
 
   `Ctrl+G` - find hex address dialog
