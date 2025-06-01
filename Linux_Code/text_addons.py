@@ -7,6 +7,7 @@ class TextAddons:
         self.ui = ui
         self.time_col = 0
         self.time_shift = 0
+        self.delay_limit = 0.2
 
     def revert_value(self, row, col):
         new = self.ui.unpacked[(row * self.ui.columns) + col]
@@ -326,7 +327,7 @@ class TextAddons:
             return
 
         current_time = time.time()
-        if self.time_col + 0.5 >= current_time:
+        if self.time_col + self.delay_limit >= current_time:
             return
 
         self.time_col = current_time
@@ -354,27 +355,14 @@ class TextAddons:
 
         values = self.ui.model.get_all_data()
 
-        self.ui.current_values = []
+        from column_transform.column_transform_module import gather_values
 
-        for i in range(self.ui.shift_count):
-            self.ui.current_values.append(None)
-
-        for row in values:
-            for col in row:
-                if col is not None:
-                    self.ui.current_values.append(col)
-
-        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
-                range(0, len(self.ui.current_values), self.ui.columns)]
-
-        if len(rows[-1]) < self.ui.columns:
-            rows[-1].extend([None] * (self.ui.columns - len(rows[-1])))
+        self.ui.current_values, rows = gather_values(self.ui.shift_count, self.ui.columns, values)
 
         self.ui.model.set_data(rows)
         self.ui.model.layoutChanged.emit()
 
-        from text_view import TextView
-        text_view = TextView(self.ui)
+        text_view = self.ui.text_view_
         text_view.set_labels_y_axis()
         text_view.set_column_width()
 
@@ -393,8 +381,10 @@ class TextAddons:
 
         time_shift_now = time.time()
 
-        if self.time_shift + 0.5 >= time_shift_now:
+        if self.time_shift + self.delay_limit >= time_shift_now:
             return
+
+        self.time_shift = time_shift_now
 
         selection_model = self.ui.table_view.selectionModel()
         selected_indexes = selection_model.selectedIndexes()
@@ -421,25 +411,9 @@ class TextAddons:
 
         values = self.ui.model.get_all_data()
 
-        self.ui.current_values = []
+        from column_transform.column_transform_module import gather_values
 
-        for i in range(self.ui.shift_count):
-            self.ui.current_values.append(None)
-
-        for row in values:
-            for col in row:
-                if col is not None:
-                    self.ui.current_values.append(col)
-
-        rows = [self.ui.current_values[i:i + self.ui.columns] for i in
-                range(0, len(self.ui.current_values) - self.ui.columns, self.ui.columns)]  # get values by rows
-
-        remaining_elements = len(self.ui.current_values) % self.ui.columns  # last row offset
-
-        if remaining_elements:
-            last_row = list(self.ui.current_values[-remaining_elements:]) + [None] * (
-                    self.ui.columns - remaining_elements)  # last row values
-            rows.append(last_row)
+        self.ui.current_values, rows = gather_values(self.ui.shift_count, self.ui.columns, values)
 
         self.ui.model.set_data(rows)
         self.ui.model.layoutChanged.emit()
@@ -472,7 +446,6 @@ class TextAddons:
             self.ui.disable_2d_canvas = True
             self.ui.sync_2d_scroll = True
         if index == 2:
-            self.ui.tk_win_manager.open_tkinter_window()
             self.ui.focused_3d_tab = True
         else:
             self.ui.tk_win_manager.kill_tkinter_window()

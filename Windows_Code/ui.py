@@ -1,7 +1,7 @@
 import time
 from PyQt6.QtCore import QAbstractTableModel, QModelIndex
-from PyQt6.QtWidgets import QMainWindow, QWidget, QTabWidget, QTableView, QHeaderView, QGridLayout, QPushButton, QFrame, \
-    QLabel, QLineEdit, QSizePolicy, QSpacerItem, QTableWidget, QListWidget, QVBoxLayout, QMenu, QMessageBox, QStyle
+from PyQt6.QtWidgets import QMainWindow, QWidget, QTabWidget, QTableView, QHeaderView, QGridLayout, QPushButton, \
+    QLabel, QLineEdit, QSizePolicy, QSpacerItem, QTableWidget, QListWidget, QVBoxLayout, QMenu, QMessageBox
 from PyQt6.QtGui import QAction, QGuiApplication, QColor, QKeyEvent, QKeySequence, QShortcut, QFont, QIcon
 from PyQt6.QtCore import Qt, QPoint
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -228,6 +228,8 @@ class LinOLS(QMainWindow):
 
         self.create_shortcut(self.tab3, "Alt+Return")
 
+        self.create_shortcut(self.tab3, "Ctrl+R")
+
         self.clean_up()
 
     def create_shortcut(self, tab, key_sequence):
@@ -282,6 +284,8 @@ class LinOLS(QMainWindow):
             self.mode3d.paste_map()
         elif key_sequence == "Alt+Return":
             self.maps.map_properties_dialog("map")
+        elif key_sequence == "Ctrl+R":
+            self.tk_win_manager.open_tkinter_window()
 
     def setup_bottom_row(self, main_layout):
         text_layout = QGridLayout()
@@ -573,8 +577,8 @@ class LinOLS(QMainWindow):
 
         self.canvas.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
-        self.canvas.mpl_connect("button_press_event", self.mode2d.on_canvas_click)  # change later
-        self.canvas.mpl_connect("key_press_event", self.mode2d.on_key_press_2d)  # change later
+        self.canvas.mpl_connect("button_press_event", self.mode2d.on_canvas_click)
+        self.canvas.mpl_connect("key_press_event", self.mode2d.on_key_press_2d)
 
         left_grid_layout.addWidget(btn_left, 0, 0)
         left_grid_layout.addWidget(btn_fast_left, 0, 1)
@@ -846,6 +850,10 @@ class LinOLS(QMainWindow):
         export_map_pack_action = QAction("Export Mappack", self)
         map_pack_menu.addAction(export_map_pack_action)
         export_map_pack_action.triggered.connect(self.maps.export_map)
+
+        sort_map_pack_action = QAction("Sort Mappack", self)
+        map_pack_menu.addAction(sort_map_pack_action)
+        sort_map_pack_action.triggered.connect(self.maps.sort_maps)
 
     def clean_up(self):
         file_path = "mappack.mp"
@@ -1208,6 +1216,10 @@ class CustomTableWidget(QTableWidget):
         paste_selected_action = QAction("Paste selected (Ctrl+V)", self)
         context_menu.addAction(paste_selected_action)
         paste_selected_action.triggered.connect(self.ui.mode3d.paste_selected)
+
+        show_in_3d_action = QAction("Show in 3D (Ctrl+R)", self)
+        context_menu.addAction(show_in_3d_action)
+        show_in_3d_action.triggered.connect(self.ui.tk_win_manager.open_tkinter_window)
 
         context_menu.addSeparator()
 

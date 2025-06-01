@@ -14,6 +14,13 @@ LinOLS is a free, open-source chiptuning software. It allows for advanced ECU ma
 ## How to run LinOLS on Linux
 You can download the `executable` for Linux, which is located under the `latest release` in this repository.
 
+Open a terminal and navigate to the directory where you downloaded the executable.
+
+Make the executable runnable by executing the following command:
+```bash
+sudo chmod +x LinOLS
+```
+
 And then you just run it with `./LinOLS`.
 
 ## How to run LinOLS on Windows
@@ -109,11 +116,11 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   Linux:
   ```bash
-  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' main.py
+  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' --add-binary='column_transform/column_transform_module.cpython-313-x86_64-linux-gnu.so:.' --add-data='ui_components/col_add.png:ui_components' --add-data='ui_components/col_remove.png:ui_components' --add-data='ui_components/shift_col+.png:ui_components' --add-data='ui_components/shift_col-.png:ui_components' main.py
   ```
   Windows:
   ```bash
-  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cp313-win_amd64.pyd:.' --icon=icon.ico main.py
+  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cp313-win_amd64.pyd:.' --add-binary='column_transform/column_transform_module.cp313-win_amd64.pyd:.' --add-data='ui_components/col_add.png:ui_components' --add-data='ui_components/col_remove.png:ui_components' --add-data='ui_components/shift_col+.png:ui_components' --add-data='ui_components/shift_col-.png:ui_components' --icon=icon.ico main.py
   ```
 
 ## Desktop Shortcut
@@ -197,6 +204,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   
   You can right click on both axis and any map value to change the `axis's/map's properties`.
 
+  To open the `3D View`, right-click on a map value and select `Show in 3D`, or press `Ctrl+R`.
+
   You can quickly modify selected values by right-clicking on any map value. This will allow you to `sign map values in 3D` and `Value` -> used to change selected value quickly.
 
   Every copy and paste buttons are meant for interection with programs like `Excel` and `Libre Calc`.
@@ -247,6 +256,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Export Mappack` is used to export mappack / `.mp` files.  
 
+  `Sort Mappack` is used to sort the current mappack by its start index.
+
   ### Shortcuts
   Skip to the next changed value - `n`
   
@@ -281,6 +292,8 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
   `m` - increase number of columns by one
 
   `k` - add a new map
+
+  `Ctrl+R` - open `3D view` in `3D` tab
 
 ## Acknowledgments
 

@@ -45,7 +45,7 @@ class TkWindowManager:
         def run_tk():
             self.tk_root = Tk()
             self.tk_root.geometry(f"+{x}+{y}")
-            #self.tk_root.attributes('-topmost', True)  # set the window to stay on top
+            self.tk_root.attributes('-topmost', True)  # set the window to stay on top
             self.tk_win = TkinterWindow(self.tk_root, self.ui, self)
             self.tkinter_available = True
 
@@ -147,7 +147,7 @@ class TkinterWindow:
 
         self.parent.ax_3d.clear()
 
-        surface = self.parent.ax_3d.plot_surface(x, y, new_values, color='#D3D3D3', edgecolor='none')
+        surface = self.parent.ax_3d.plot_surface(x, y, new_values, color='#D3D3D3', edgecolor='#D3D3D3')
 
         self.parent.ax_3d.set_xlabel('X')
         self.parent.ax_3d.set_ylabel('Y')

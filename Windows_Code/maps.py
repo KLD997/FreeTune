@@ -23,6 +23,10 @@ class Maps_Utility:
     def add_map(self):
         from text_addons import TextAddons
         text_addons_ = TextAddons(self.ui)
+
+        clipboard = QApplication.clipboard()
+        clipboard_text_before = clipboard.text()
+
         if not text_addons_.copy_values(True):
             return
 
@@ -38,8 +42,9 @@ class Maps_Utility:
         self.start_index = (first_row * self.ui.columns) + first_col - self.ui.shift_count
         self.end_index = (last_row * self.ui.columns) + last_col - self.ui.shift_count
 
-        clipboard = QApplication.clipboard() # get data from clipboard
         clipboard_text = clipboard.text() # get text from clipboard
+
+        clipboard.setText(clipboard_text_before)
 
         map_data = clipboard_text.strip().split()
         self.find_factors((len(map_data)))
@@ -598,3 +603,42 @@ class Maps_Utility:
         if restart:
             self.ui.sync_2d_scroll = True
             self.ui.mode2d.draw_canvas(self.ui)
+
+    def sort_maps(self):
+        if not self.file_path and self.ui.map_list_counter <= 1:
+            return
+        with open(self.file_path, 'r') as file:
+            content = file.read().split('\n')
+            total_maps = len(content) // 10
+
+            pairs = [[content[i * 10 + j] for j in range(10)] for i in range(total_maps)]
+
+            sorted_pairs = sorted(pairs, key=lambda x: x[1])
+
+            content = [item for pair in sorted_pairs for item in pair]
+
+        with open(self.file_path, 'w') as file:
+            for i, item in enumerate(content):
+                file.write(item) if i == len(content) - 1 else file.write(f"{item}\n")
+
+        self.ui.map_list_counter = 0
+        self.last_map_index = 0
+        self.ui.mode3d.set_default()
+
+        self.ui.map_list.clear()
+        self.ui.start_index_maps.clear()
+        self.ui.end_index_maps.clear()
+        self.ui.maps_names = []
+        self.first_run = False
+
+        for i in range(len(content) // 10):
+            self.map_name = content[i * 10]
+            self.start_index = int(content[(i * 10) + 1])
+            self.end_index = int(content[(i * 10) + 2])
+            self.size = content[(i * 10) + 3]
+            self.ui.map_list.insertItem(self.ui.map_list_counter, self.map_name)
+            self.ui.maps_names.append(self.map_name)
+            self.highlight_2d_map(self.start_index, self.end_index)
+            self.ui.map_list_counter += 1
+
+        QMessageBox.information(self.ui, "Info", "Mappack successfully sorted.")

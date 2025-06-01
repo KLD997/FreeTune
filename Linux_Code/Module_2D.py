@@ -98,11 +98,9 @@ class Mode2D:
 
         if not self.highlight_enabled and not self.ui.display_sel and not self.ui.sync_2d_scroll: # calibrate text to 2d
             row = (start_index - self.ui.shift_count) // self.ui.columns
-            index_sel = self.ui.model.index(row, 0)
+            row_red_line = self.ui.red_line // self.ui.columns if self.ui.red_line is not None else 0
+            index_sel = self.ui.model.index(row + row_red_line, 0)
             self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
-
-            selection_model = self.ui.table_view.selectionModel()
-            selection_model.clearSelection()
 
         self.ui.ax.set_xlim(0, len(scaled_data_mod))
         self.ui.ax.set_ylim(0, 65535)
