@@ -295,6 +295,10 @@ You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386
 
   `Ctrl+R` - open `3D view` in `3D` tab
 
+  `Ctrl+S` - save a file
+
+  `Ctrl + Left Arrow Key` & `Ctrl + Right Arrow Key` - shift columns shortcut
+
 ## Acknowledgments
 
 Some icons/images used in this project are sourced from:

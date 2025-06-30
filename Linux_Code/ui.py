@@ -50,6 +50,7 @@ class LinOLS(QMainWindow):
 
         '''General variables'''
         self.file_path = "" # file path of the loaded file
+        self.last_file_name = "" # last used file name for saving the file
         self.columns = 20 # num of columns
         self.num_rows = 55 # num of rows for 2d
         self.unpacked = [] # all original numbers
@@ -201,6 +202,8 @@ class LinOLS(QMainWindow):
 
         self.create_shortcut(self.tab1, "w")
         self.create_shortcut(self.tab1, "m")
+        self.create_shortcut(self.tab1, "Ctrl+Left")
+        self.create_shortcut(self.tab1, "Ctrl+Right")
 
         self.create_shortcut(self.tab1, "k")
 
@@ -215,6 +218,8 @@ class LinOLS(QMainWindow):
 
         self.create_shortcut(self.tab1, "Ctrl+C")
         self.create_shortcut(self.tab1, "Ctrl+V")
+
+        self.create_shortcut(self.tab1, "Ctrl+S")
 
         self.create_shortcut(self.tab3, "Ctrl+C")
         self.create_shortcut(self.tab3, "Ctrl+V")
@@ -282,6 +287,12 @@ class LinOLS(QMainWindow):
             self.maps.map_properties_dialog("map")
         elif key_sequence == "Ctrl+R":
             self.tk_win_manager.open_tkinter_window()
+        elif key_sequence == "Ctrl+Left":
+            self.text_addons.shift_values("+")
+        elif key_sequence == "Ctrl+Right":
+            self.text_addons.shift_values("-")
+        elif key_sequence == "Ctrl+S":
+            self.text_view_.save_file()
 
     def setup_bottom_row(self, main_layout):
         text_layout = QGridLayout()
@@ -807,7 +818,7 @@ class LinOLS(QMainWindow):
         open_action.triggered.connect(self.text_view_.open_file)
         file_menu.addAction(open_action)
 
-        save_action = QAction("Save", self)
+        save_action = QAction("Save (Ctrl+S)", self)
         save_action.triggered.connect(self.text_view_.save_file)
         file_menu.addAction(save_action)
 
@@ -1161,6 +1172,8 @@ class CustomTableView(QTableView):
         self.linols.text_view_.set_labels_y_axis()
         self.linols.text_view_.set_column_width()
 
+        selection_model.clearSelection()
+
 class CustomListBox(QListWidget):
     def __init__(self, ui):
         super().__init__()
@@ -1259,3 +1272,5 @@ class CustomTableWidget(QTableWidget):
             col = item.column()
 
             self.ui.mode3d.set_ori_value(row, col)
+
+        self.clearSelection()

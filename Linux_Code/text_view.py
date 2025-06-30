@@ -153,7 +153,7 @@ class TextView:
         self.set_labels_y_axis()
         self.set_column_width()
 
-    def save_file(self, file_name=None):
+    def save_file(self):
         if not self.ui.file_path:
             QMessageBox.warning(self.ui, "Warning", "No file is currently open. Please open a file first.")
             return
@@ -165,34 +165,68 @@ class TextView:
                 if col is not None:
                     current_values.append(col)
 
-        manufacturer, ok1 = QInputDialog.getText(self.ui, "Input", "Enter Manufacturer:")
-        model, ok2 = QInputDialog.getText(self.ui, "Input", "Enter Model:")
-        modification, ok3 = QInputDialog.getText(self.ui, "Input", "Enter Modification:")
+        file_name = self.ui.last_file_name
 
-        if not (ok1 and ok2 and ok3 and manufacturer and model and modification):
-            QMessageBox.warning(self.ui, "Warning", "Manufacturer, Model, and Modification are required.")
-            return
+        if not self.ui.last_file_name:
+            manufacturer, ok1 = QInputDialog.getText(self.ui, "Input", "Enter Manufacturer:")
+            model, ok2 = QInputDialog.getText(self.ui, "Input", "Enter Model:")
+            modification, ok3 = QInputDialog.getText(self.ui, "Input", "Enter Modification:")
 
+            if not (ok1 and ok2 and ok3 and manufacturer and model and modification):
+                QMessageBox.warning(self.ui, "Warning", "Manufacturer, Model, and Modification are required.")
+                return
 
-        if not file_name:
             file_name = f"LinOLS_{manufacturer}_{model}_{modification}.bin"
             user_directory = os.path.expanduser("~")
             file_name = os.path.join(user_directory, file_name)
+            self.ui.last_file_name = file_name
+
+            new_file = True
+        else:
+            msg_box = QMessageBox(self.ui)
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            msg_box.setWindowTitle("Save with Previous File Name")
+            msg_box.setText("Would you like to save the file with the previous file name?")
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+            msg_box.setDefaultButton(QMessageBox.StandardButton.Yes)
+
+            response = msg_box.exec()
+
+            if response == QMessageBox.StandardButton.No:
+                manufacturer, ok1 = QInputDialog.getText(self.ui, "Input", "Enter Manufacturer:")
+                model, ok2 = QInputDialog.getText(self.ui, "Input", "Enter Model:")
+                modification, ok3 = QInputDialog.getText(self.ui, "Input", "Enter Modification:")
+
+                if not (ok1 and ok2 and ok3 and manufacturer and model and modification):
+                    QMessageBox.warning(self.ui, "Warning", "Manufacturer, Model, and Modification are required.")
+                    return
+
+                file_name = f"LinOLS_{manufacturer}_{model}_{modification}.bin"
+                user_directory = os.path.expanduser("~")
+                file_name = os.path.join(user_directory, file_name)
+                self.ui.last_file_name = file_name
+
+                new_file = True
+            else:
+                new_file = False
 
         try:
-            file_path, selected_filter = QFileDialog.getSaveFileName(self.ui, "Save File", file_name, "Binary Files (*.bin);;All Files (*)")
+            if new_file:
+                file_path, selected_filter = QFileDialog.getSaveFileName(self.ui, "Save File", file_name, "Binary Files (*.bin);;All Files (*)")
 
-            if not file_path:
-                QMessageBox.information(self.ui, "Info", "File save canceled.")
-                return
+                if not file_path:
+                    QMessageBox.information(self.ui, "Info", "File save canceled.")
+                    return
 
             if self.ui.low_high:
                 content_to_write = b''.join(struct.pack('<H', int(value)) for value in current_values)
             else:
                 content_to_write = b''.join(struct.pack('>H', int(value)) for value in current_values)
-            with open(file_path, 'wb') as file:
+
+            with open(self.ui.last_file_name, 'wb') as file:
                 file.write(content_to_write)
 
-            QMessageBox.information(self.ui, "Success", f"File saved successfully at {file_path}.")
+            QMessageBox.information(self.ui, "Success", f"File saved successfully at {self.ui.last_file_name}.")
         except Exception as e:
             QMessageBox.warning(self.ui, "Error", f"Error saving file: {e}")

@@ -232,7 +232,7 @@ class TextAddons:
         if clipboard_text[-1] == '\n':
             clipboard_text = clipboard_text[:-1]
 
-        values_clipboard = clipboard_text.strip().split() # get values, type -> string
+        values_clipboard = clipboard_text.strip().split()
 
         if len(values_clipboard) > 800:
             QMessageBox.warning(self.ui, "Warning", "Too much data!")
@@ -252,41 +252,26 @@ class TextAddons:
         row_start = row_ori
         col_start = col_ori
 
-        entered_new_line = False
-
         if not self.check_valid_data(clipboard_text ,values, col_ori, row_start, col_start):
             return
 
         try:
-            for i in range(len(clipboard_text)): # insert data
-                if values[row_start][col_start] is None:
-                    raise IndexError
-                if clipboard_text[i] == '\t':
-                    values[row_start][col_start] = int(values_clipboard[x])
-                    x += 1
-                    if col_start + 1 >= self.ui.columns:
-                        row_start += 1
-                        col_start = 0
-                        entered_new_line = True
-                    else:
-                        col_start += 1
+            values_clipboard = clipboard_text.strip().replace('\r\n', '\n').replace('\t', '\n').split('\n')
 
-                if clipboard_text[i] == '\n':
-                    values[row_start][col_start] = int(values_clipboard[x])
-                    x += 1
-                    if not entered_new_line:
-                        row_start += 1
-                    else:
-                        entered_new_line = False
+            x = row_start
+            y = col_start
 
-                    col_start = col_ori
+            for i in range(len(values_clipboard)): # insert data
+                if y == self.ui.columns:
+                    x += 1
+                    y = 0
+                values[x][y] = int(values_clipboard[i])
+
+                y += 1
 
         except IndexError:
             QMessageBox.warning(self.ui, "Warning", "Data cannot be pasted!")
             return
-
-        # add last values
-        values[row_start][col_start] = int(values_clipboard[x])
 
         # reinsert data
         self.ui.current_values = []
@@ -317,9 +302,11 @@ class TextAddons:
 
         text_view.set_labels_y_axis()
         text_view.set_column_width()
-
-        index_sel = self.ui.model.index(row_ori, col_ori)
-        self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
+        
+        
+        if not self.ui.tab1_selected:
+            index_sel = self.ui.model.index(row_ori, col_ori)
+            self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
 
     def adjust_columns(self, mode):
         if not self.ui.file_path:
