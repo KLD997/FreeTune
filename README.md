@@ -26,8 +26,6 @@ And then you just run it with `./LinOLS`.
 ## How to run LinOLS on Windows
 You can download an `setup file` for Window 10/11 64bit in map called `Windows_Setup` in this repository. 
 
-## Donations
-You can donate here: `https://www.paypal.com/donate?hosted_button_id=HEKSD48J386MJ`
 ## Prerequisites
 
 ### System Requirements
