@@ -167,6 +167,8 @@ class TextView:
 
         file_name = self.ui.last_file_name
 
+        last_file_dir = ""
+
         if not self.ui.last_file_name:
             manufacturer, ok1 = QInputDialog.getText(self.ui, "Input", "Enter Manufacturer:")
             model, ok2 = QInputDialog.getText(self.ui, "Input", "Enter Model:")
@@ -202,9 +204,10 @@ class TextView:
                     QMessageBox.warning(self.ui, "Warning", "Manufacturer, Model, and Modification are required.")
                     return
 
+                last_file_dir = self.ui.last_file_name
                 file_name = f"LinOLS_{manufacturer}_{model}_{modification}.bin"
-                user_directory = os.path.expanduser("~")
-                file_name = os.path.join(user_directory, file_name)
+                last_dir = self.ui.last_file_name[self.ui.last_file_name.rfind('/') + 1:]
+                file_name = os.path.join(last_dir, file_name)
                 self.ui.last_file_name = file_name
 
                 new_file = True
@@ -212,11 +215,15 @@ class TextView:
                 new_file = False
 
         try:
+            file_path = ""
+
             if new_file:
                 file_path, selected_filter = QFileDialog.getSaveFileName(self.ui, "Save File", file_name, "Binary Files (*.bin);;All Files (*)")
 
                 if not file_path:
                     QMessageBox.information(self.ui, "Info", "File save canceled.")
+                    if last_file_dir:
+                        self.ui.last_file_name = last_file_dir
                     return
 
             if self.ui.low_high:
@@ -224,8 +231,13 @@ class TextView:
             else:
                 content_to_write = b''.join(struct.pack('>H', int(value)) for value in current_values)
 
-            with open(self.ui.last_file_name, 'wb') as file:
-                file.write(content_to_write)
+            if file_path:
+                with open(file_path, 'wb') as file:
+                    self.ui.last_file_name = file_path
+                    file.write(content_to_write)
+            else:
+                with open(self.ui.last_file_name, 'wb') as file:
+                    file.write(content_to_write)
 
             QMessageBox.information(self.ui, "Success", f"File saved successfully at {self.ui.last_file_name}.")
         except Exception as e:
