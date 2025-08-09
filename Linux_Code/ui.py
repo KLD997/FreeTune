@@ -1,10 +1,12 @@
 import time
+import matplotlib
+import matplotlib.pyplot as plt
+matplotlib.pyploy.switch_backend('TkAgg')
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PyQt6.QtWidgets import QMainWindow, QWidget, QTabWidget, QTableView, QHeaderView, QGridLayout, QPushButton, \
     QLabel, QLineEdit, QSizePolicy, QSpacerItem, QTableWidget, QListWidget, QVBoxLayout, QMenu, QMessageBox
 from PyQt6.QtGui import QAction, QGuiApplication, QKeySequence, QShortcut, QFont
 from PyQt6.QtCore import Qt, QPoint
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.pyplot as plt
 import os
 
 class LinOLS(QMainWindow):

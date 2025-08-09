@@ -1,9 +1,11 @@
-# LinOLS
-LinOLS is a free, open-source chiptuning software, similar to WinOLS.
+<img width="1920" height="1078" alt="image" src="https://github.com/user-attachments/assets/f67cf7d6-a446-46b8-8660-d3288d2d08a6" />
 
-# LinOLS - Chiptuning Software
+# FreeTune
+FreeTune is a free, open-source chiptuning software, similar to WinOLS.
 
-LinOLS is a free, open-source chiptuning software. It allows for advanced ECU mapping and remapping for tuning and optimization, similar to WinOLS. LinOLS is built with Python and provides a graphical user interface for easier interaction and visualization of data.
+# Freetune - Chiptuning Software
+
+LinOLS is a free, open-source chiptuning software. It allows for advanced ECU mapping and remapping for tuning and optimization, similar to WinOLS. FreeTune is built with Python and provides a graphical user interface for easier interaction and visualization of data.
 
 ## Features
 
@@ -11,26 +13,10 @@ LinOLS is a free, open-source chiptuning software. It allows for advanced ECU ma
 - Plotting and data visualization with `matplotlib`.
 - Customizable to suit various ECU tuning needs.
 
-## How to run LinOLS on Linux
-You can download the `executable` for Linux, which is located under the `latest release` in this repository.
-
-Open a terminal and navigate to the directory where you downloaded the executable.
-
-Make the executable runnable by executing the following command:
-```bash
-sudo chmod +x LinOLS
-```
-
-And then you just run it with `./LinOLS`.
-
-## How to run LinOLS on Windows
-You can download an `setup file` for Window 10/11 64bit in map called `Windows_Setup` in this repository. 
-
 ## Prerequisites
 
 ### System Requirements
 
-- **Operating System**: Windows or Linux-based (Ubuntu, Arch, or other distributions).
 - **Python 3**: Ensure Python 3.x is installed.
   - Check if Python is installed: `python3 --version`
   - If not installed, you can install it using your system package manager.
@@ -66,7 +52,7 @@ You can download an `setup file` for Window 10/11 64bit in map called `Windows_S
   sudo dnf install python3-tkinter
   ```
   
-## How to run LinOLS
+## How to run FreeTune
   When you installed all dependencies and they are working as intended you can run LinOLS using the following command:
   ```bash
   python3 main.py
@@ -86,47 +72,6 @@ You can download an `setup file` for Window 10/11 64bit in map called `Windows_S
   ```bash
   python setup.py build_ext --inplace
   ```
-## How to compile Cython files on Windows
-  ### Required packages
-  Before you start, ensure that you have the necessary packages installed. You can install `Cython` using pip:
-  ```bash
-  pip install Cython
-  ```
-  You also have to install `Microsoft Build Tools`.
-  
-  ### Compilation Steps
-  Navigate to the `potential_maps` directory:
-  ```bash
-  cd potential_maps
-  ```
-  Then the following command to compile the Cython files:
-  ```bash
-  python setup.py build_ext --inplace
-  ```
-
-## How to make an executable
-  To make an Executable you have to use `pyinstaller` a Python library to make executables.
-  You can install `pyinstaller` using `pip`:
-  ```bash
-  pip install pyinstaller
-  ```
-  Once you have pyinstaller installed you can run this command in the `"LinOLS directory"`:
-
-  Linux:
-  ```bash
-  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='ui_components/TableModel/table_model.cpython-313-x86_64-linux-gnu.so:.' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' --add-binary='column_transform/column_transform_module.cpython-313-x86_64-linux-gnu.so:.' --add-data='ui_components/Toolbar_Widget/col_add.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/col_remove.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col+.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col-.png:ui_components/Toolbar_Widget' main.py
-  ```
-  Windows:
-  ```bash
-  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='ui_components/TableModel/table_model.cp313-win_amd64.pyd:.' --add-binary='potential_maps/find_maps.cp313-win_amd64.pyd:.' --add-binary='column_transform/column_transform_module.cp313-win_amd64.pyd:.' --add-data='ui_components/Toolbar_Widget/col_add.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/col_remove.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col+.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col-.png:ui_components/Toolbar_Widget' --icon=icon.ico main.py
-  ```
-
-## Desktop Shortcut
-  If you want you can use a provided template desktop shortcut named: `LinOLS.desktop`.
-  New update
-  You can also find an icon named: `icon.png`.
-
-  Only thing you need to edit is `Exec` and `Icon`.
 
 ## Instructions
   ### Text Tab
