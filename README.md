@@ -114,11 +114,11 @@ You can download an `setup file` for Window 10/11 64bit in map called `Windows_S
 
   Linux:
   ```bash
-  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' --add-binary='column_transform/column_transform_module.cpython-313-x86_64-linux-gnu.so:.' --add-data='ui_components/col_add.png:ui_components' --add-data='ui_components/col_remove.png:ui_components' --add-data='ui_components/shift_col+.png:ui_components' --add-data='ui_components/shift_col-.png:ui_components' main.py
+  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='ui_components/TableModel/table_model.cpython-313-x86_64-linux-gnu.so:.' --add-binary='potential_maps/find_maps.cpython-313-x86_64-linux-gnu.so:.' --add-binary='column_transform/column_transform_module.cpython-313-x86_64-linux-gnu.so:.' --add-data='ui_components/Toolbar_Widget/col_add.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/col_remove.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col+.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col-.png:ui_components/Toolbar_Widget' main.py
   ```
   Windows:
   ```bash
-  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='potential_maps/find_maps.cp313-win_amd64.pyd:.' --add-binary='column_transform/column_transform_module.cp313-win_amd64.pyd:.' --add-data='ui_components/col_add.png:ui_components' --add-data='ui_components/col_remove.png:ui_components' --add-data='ui_components/shift_col+.png:ui_components' --add-data='ui_components/shift_col-.png:ui_components' --icon=icon.ico main.py
+  pyinstaller --onefile --windowed --hidden-import='PIL._tkinter_finder' --add-binary='ui_components/TableModel/table_model.cp313-win_amd64.pyd:.' --add-binary='potential_maps/find_maps.cp313-win_amd64.pyd:.' --add-binary='column_transform/column_transform_module.cp313-win_amd64.pyd:.' --add-data='ui_components/Toolbar_Widget/col_add.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/col_remove.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col+.png:ui_components/Toolbar_Widget' --add-data='ui_components/Toolbar_Widget/shift_col-.png:ui_components/Toolbar_Widget' --icon=icon.ico main.py
   ```
 
 ## Desktop Shortcut
