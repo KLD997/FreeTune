@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QDialog, QApplication, QVBoxLayout, QLabel, QListWidget, QLineEdit, QPushButton, QMessageBox
+from PyQt6.QtWidgets import QDialog, QApplication, QVBoxLayout, QLabel, QListWidget, QLineEdit, QPushButton
 
 
 class Factor_Dialog(QDialog):

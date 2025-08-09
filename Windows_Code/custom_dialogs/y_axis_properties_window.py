@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt
 
 class YAxisProperties(QDialog):
     def __init__(self, ui):
-        super().__init__()
+        super().__init__(ui)
         self.ui = ui
 
         self.setWindowTitle("Y-Axis Properties")

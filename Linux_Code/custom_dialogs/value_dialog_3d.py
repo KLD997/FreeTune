@@ -4,10 +4,10 @@ import os
 
 class ValueDialog3D(QDialog):
     def __init__(self, ui=None):
-        super().__init__()
+        super().__init__(ui)
         self.ui = ui
         self.selected_value = ""
-        self.selected_button = None  # Variable to keep track of the selected button
+        self.selected_button = None
         self.setup_ui()
 
     def setup_ui(self):

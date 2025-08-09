@@ -15,7 +15,7 @@ class CenteredItemDelegate(QStyledItemDelegate):
 
 class MapProperties(QDialog):
     def __init__(self, ui):
-        super().__init__()
+        super().__init__(ui)
         self.ui = ui
 
         self.setWindowTitle("Map Properties")

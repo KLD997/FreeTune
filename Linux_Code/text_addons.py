@@ -7,7 +7,7 @@ class TextAddons:
         self.ui = ui
         self.time_col = 0
         self.time_shift = 0
-        self.delay_limit = 0.2
+        self.delay_limit = 0.3
 
     def revert_value(self, row, col):
         new = self.ui.unpacked[(row * self.ui.columns) + col]
@@ -48,9 +48,11 @@ class TextAddons:
 
         if len(selected_indexes) == 1:
             selected_index = selected_indexes[0]
+            if not selected_index.data():
+                return
+            current_item = int(selected_index.data())
             row = selected_index.row()
             col = selected_index.column()
-            current_item = int(selected_index.data())
             index = (row * self.ui.columns) + col
             if index <= len(self.ui.unpacked):
                 ori_value = self.ui.unpacked[index - self.ui.shift_count]
@@ -428,7 +430,17 @@ class TextAddons:
         if index == 1:
             self.ui.disable_2d_canvas = False
             self.ui.sync_2d_scroll = False
+            selection_model = self.ui.table_view.selectionModel()
+            selected_indexes = selection_model.selectedIndexes()
+            if selected_indexes:
+                item = selected_indexes[0]
+                row = item.row()
+                col = item.column()
+                index = (row * self.ui.columns) + col - self.ui.shift_count
+                self.ui.red_line = index - self.ui.current_frame
+                self.ui.mode2d.highlight_text(index, True)
             self.ui.mode2d.draw_canvas(self.ui)
+
         else:
             self.ui.disable_2d_canvas = True
             self.ui.sync_2d_scroll = True

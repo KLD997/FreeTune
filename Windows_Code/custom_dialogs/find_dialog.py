@@ -1,9 +1,20 @@
+from PyQt6.QtGui import QShortcut, QKeySequence
 from PyQt6.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QApplication, QMessageBox
 from PyQt6.QtCore import Qt
 
+class CustomLineEdit(QLineEdit):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_V and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            self.parent().edit_pasted_values()
+        else:
+            super().keyPressEvent(event)
+
 class FindDialog(QDialog):
     def __init__(self, ui):
-        super().__init__()
+        super().__init__(ui)
         self.ui = ui
 
         self.setWindowTitle("Find")
@@ -57,7 +68,7 @@ class FindDialog(QDialog):
 
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.find_entry = QLineEdit()
+        self.find_entry = CustomLineEdit(self)
         self.find_entry.setStyleSheet("""
             border: 2px;
             border-radius: 5px;
@@ -71,6 +82,8 @@ class FindDialog(QDialog):
         """)
 
         self.find_entry.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        shortcut = QShortcut(QKeySequence("Return"), self.find_entry)
+        shortcut.activated.connect(self.find_value)
 
         btn_find = QPushButton("Find")
         btn_find.setStyleSheet(button_style)
@@ -99,26 +112,49 @@ class FindDialog(QDialog):
         self.setLayout(layout)
 
     def find_value(self):
-        try:
-            value = int(self.find_entry.text())
-            if value < 0 or value > 65535:
-                raise ValueError
-        except ValueError:
-            QMessageBox.warning(self.ui, "Warning", "Please enter a valid number!")
-            return
-
         value_found = False
-
         found_value_index = 0
+        text = self.find_entry.text()
+        if ',' in text:
+            try:
+                values = text.split(',')
 
-        for i in range(len(self.ui.current_values)):
-            if self.ui.current_values[i] == value:
-                found_value_index = i
-                value_found = True
-                break
+                int_values = []
+                for item in values:
+                    value = int(item)
+                    if value < 0 or value > 65535:
+                        raise ValueError
+                    int_values.append(value)
+
+                int_values = tuple(int_values)
+
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning", "Please enter valid numbers!")
+                return
+
+            for i in range(len(self.ui.current_values)):
+                if tuple(self.ui.current_values[i:i + len(int_values)]) == int_values:
+                    found_value_index = i
+                    value_found = True
+                    break
+        else:
+            try:
+                value = int(text)
+                if value < 0 or value > 65535:
+                    raise ValueError
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning", "Please enter a valid number!")
+                return
+
+            for i in range(len(self.ui.current_values)):
+                if self.ui.current_values[i] == value:
+                    found_value_index = i
+                    value_found = True
+                    break
 
         if not value_found:
             QMessageBox.warning(self.ui, "Warning", "No matching value was found.")
+            return
 
         selection_model = self.ui.table_view.selectionModel()
         selection_model.clearSelection()
@@ -127,13 +163,31 @@ class FindDialog(QDialog):
         self.ui.mode2d.text_to_2d(self.ui)
 
     def find_move(self, previous):
-        try:
-            value = int(self.find_entry.text())
-            if value < 0 or value > 65535:
-                raise ValueError
-        except ValueError:
-            QMessageBox.warning(self.ui, "Warning", "Please enter a valid number!")
-            return
+        text = self.find_entry.text()
+        if ',' in text:
+            try:
+                values = text.split(',')
+
+                int_values = []
+                for item in values:
+                    value = int(item)
+                    if value < 0 or value > 65535:
+                        raise ValueError
+                    int_values.append(value)
+
+                int_values = tuple(int_values)
+
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning", "Please enter valid numbers!")
+                return
+        else:
+            try:
+                value = int(text)
+                if value < 0 or value > 65535:
+                    raise ValueError
+            except ValueError:
+                QMessageBox.warning(self.ui, "Warning", "Please enter a valid number!")
+                return
 
         selection_model = self.ui.table_view.selectionModel()
         selected_indexes = selection_model.selectedIndexes()
@@ -155,23 +209,54 @@ class FindDialog(QDialog):
         found_value_index = 0
 
         if previous:
-            for i in range(index - 1, -1, -1):
-                if self.ui.current_values[i] == value:
-                    found_value_index = i
-                    value_found = True
-                    break
+            if ',' in text:
+                for i in range(index - 1, -1, -1):
+                    if tuple(self.ui.current_values[i:i + len(int_values)]) == int_values:
+                        found_value_index = i
+                        value_found = True
+                        break
+            else:
+                for i in range(index - 1, -1, -1):
+                    if self.ui.current_values[i] == value:
+                        found_value_index = i
+                        value_found = True
+                        break
         else:
-            for i in range(index + 1, len(self.ui.current_values)):
-                if self.ui.current_values[i] == value:
-                    found_value_index = i
-                    value_found = True
-                    break
+            if ',' in text:
+                for i in range(index + 1, len(self.ui.current_values)):
+                    if tuple(self.ui.current_values[i:i + len(int_values)]) == int_values:
+                        found_value_index = i
+                        value_found = True
+                        break
+            else:
+                for i in range(index + 1, len(self.ui.current_values)):
+                    if self.ui.current_values[i] == value:
+                        found_value_index = i
+                        value_found = True
+                        break
 
         if not value_found:
             QMessageBox.warning(self.ui, "Warning", "No matching value was found.")
+            return
 
         selection_model = self.ui.table_view.selectionModel()
         selection_model.clearSelection()
 
         self.ui.mode2d.highlight_text(found_value_index - self.ui.shift_count, True)
         self.ui.mode2d.text_to_2d(self.ui)
+
+    def edit_pasted_values(self):
+        clipboard_text = QApplication.clipboard().text()
+        if not '\t' in clipboard_text:
+            self.find_entry.setText(clipboard_text)
+            return
+        values = clipboard_text.strip().replace('\r\n', '\n').replace('\t', '\n').split('\n')
+        try:
+            new_text = ""
+            for i in range(len(values)):
+                new_text += f"{int(values[i])}, " if i < len(values) - 1 else str(int(values[i]))
+        except ValueError:
+            QMessageBox.warning(self.ui, "Warning", "Please enter valid numbers!")
+            return
+
+        self.find_entry.setText(new_text)

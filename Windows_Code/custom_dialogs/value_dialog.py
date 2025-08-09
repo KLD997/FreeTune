@@ -3,10 +3,10 @@ from PyQt6.QtCore import Qt
 
 class ValueDialog(QDialog):
     def __init__(self, ui=None):
-        super().__init__()
+        super().__init__(ui)
         self.ui = ui
         self.selected_value = ""
-        self.selected_button = None  # Variable to keep track of the selected button
+        self.selected_button = None
         self.setup_ui()
 
     def setup_ui(self):
@@ -109,10 +109,18 @@ class ValueDialog(QDialog):
             self.show_error("Please enter a valid number")
             return
 
-        if not self.ui.file_path: # change
+        if not self.ui.file_path:
             self.show_error("No file is currently open. Please open a file first.")
             self.close()
             return
+        
+        selection_model = self.ui.table_view.selectionModel()
+        selected_indexes = selection_model.selectedIndexes()
+
+        for item in selected_indexes:
+            if item.data() is None or not item.data():
+                self.show_error("Please select valid cells!")
+                return
 
         if self.selected_value == "=":
             self.ui.text_addons.set_text(value)

@@ -1,6 +1,5 @@
 import numpy as np
 import time
-from PyQt6.QtCore import QItemSelectionModel
 from PyQt6.QtWidgets import QMessageBox, QTableView
 
 class Mode2D:
@@ -98,8 +97,7 @@ class Mode2D:
 
         if not self.highlight_enabled and not self.ui.display_sel and not self.ui.sync_2d_scroll: # calibrate text to 2d
             row = (start_index - self.ui.shift_count) // self.ui.columns
-            row_red_line = self.ui.red_line // self.ui.columns if self.ui.red_line is not None else 0
-            index_sel = self.ui.model.index(row + row_red_line, 0)
+            index_sel = self.ui.model.index(row + 6, 0)
             self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
 
         self.ui.ax.set_xlim(0, len(scaled_data_mod))
@@ -125,7 +123,7 @@ class Mode2D:
             self.highlight_text(self.ui.red_line, False)
             self.draw_canvas(self.ui)
 
-    def highlight_text(self, x, find_on, text_on = False):
+    def highlight_text(self, x, find_on):
         x += self.ui.shift_count
         if self.ui.current_frame > 0 and not find_on:
             value_index = x + self.ui.current_frame
@@ -136,14 +134,9 @@ class Mode2D:
 
         row = value_index // self.ui.columns
         col = (value_index % self.ui.columns)
-        # scroll to highlight
-        if not text_on:
-            index_sel = self.ui.model.index(row, col)
-            self.ui.table_view.scrollTo(index_sel, QTableView.ScrollHint.PositionAtCenter)
 
         index = self.ui.model.index(row, col)
-        selection_model = self.ui.table_view.selectionModel()
-        selection_model.select(index, QItemSelectionModel.SelectionFlag.Select)
+        self.ui.table_view.setCurrentIndex(index)
 
         if not find_on:
             value = self.ui.current_values[x + self.ui.current_frame]
@@ -255,7 +248,7 @@ class Mode2D:
 
             self.ui.red_line = int(index) - self.ui.current_frame
 
-            self.highlight_text(index, True, True)
+            self.highlight_text(index, True)
 
             value = self.ui.current_values[index + self.ui.shift_count]
             self.ui.value_btn_2d.setText(f"Value: {value:05}")

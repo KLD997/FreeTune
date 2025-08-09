@@ -6,7 +6,7 @@ from PyQt6.QtGui import QColor, QFont
 
 class DifferenceDialog(QDialog):
     def __init__(self, ui):
-        super().__init__()
+        super().__init__(ui)
         self.ui = ui
 
         self.setWindowTitle("Difference Dialog")

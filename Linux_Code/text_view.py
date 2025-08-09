@@ -47,9 +47,8 @@ class TextView:
                                 self.ui.columns - remaining_elements) # last row values
                     self.rows.append(last_row)
 
-                from ui import CustomTableView, QTableModel
+                from ui import CustomTableView
                 CustomTableView(self.ui)
-                QTableModel(self.rows, self.ui)
 
                 self.ui.model.set_data(self.rows) # set values
                 self.ui.model.layoutChanged.emit() # update table view
@@ -118,6 +117,7 @@ class TextView:
         current_values_byte_change = []
         for value in self.ui.current_values:
             if value is None:
+                current_values_byte_change.append(None)
                 continue
             low = value & 0xFF
             high = (value >> 8) & 0xFF
