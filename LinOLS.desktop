@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=LinOLS
-Exec=/usr/local/lib/linols/main.py
-Icon=/usr/share/icons/linols.png
-Terminal=false
-Type=Application
-Categories=ChipTuning;
-StartupWMClass=Linols
