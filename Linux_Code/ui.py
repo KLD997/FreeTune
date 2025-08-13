@@ -9,7 +9,7 @@ from PyQt6.QtGui import QAction, QGuiApplication, QKeySequence, QShortcut, QFont
 from PyQt6.QtCore import Qt, QPoint
 import os
 
-class LinOLS(QMainWindow):
+class FreeTune(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -22,7 +22,7 @@ class LinOLS(QMainWindow):
         from canva_3d.canva_3d_window import TkWindowManager
         from ui_components.Toolbar_Widget.toolbar import ToolbarWidget
 
-        self.setWindowTitle("LinOLS")
+        self.setWindowTitle("FreeTune")
 
         self.setMinimumWidth(1300)
 
