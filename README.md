@@ -5,7 +5,7 @@ FreeTune is a free, open-source chiptuning software, similar to WinOLS.
 
 # Freetune - Chiptuning Software
 
-LinOLS is a free, open-source chiptuning software. It allows for advanced ECU mapping and remapping for tuning and optimization, similar to WinOLS. FreeTune is built with Python and provides a graphical user interface for easier interaction and visualization of data.
+FreeTune is a free, open-source chiptuning software. It allows for advanced ECU mapping and remapping for tuning and optimization, similar to WinOLS. FreeTune is built with Python and provides a graphical user interface for easier interaction and visualization of data.
 
 ## Features
 
